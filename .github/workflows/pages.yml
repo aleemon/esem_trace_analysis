@@ -1,0 +1,73 @@
+name: Build and deploy dashboard
+
+on:
+  schedule:
+    - cron: "15 20 * * *"        # 06:15 AEST: after the previous market day's prices and dispatch files land
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild every region-year (otherwise only changed ones)
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths: ["site/**", "R/**", "run.R", "config/**", ".github/workflows/**"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # Repository variable (Settings > Secrets and variables > Actions > Variables): "synthetic" (demo) or "aemo" (NEMWeb).
+  DATA_SOURCE: ${{ vars.DATA_SOURCE || 'synthetic' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - name: Install R packages
+        run: Rscript -e 'install.packages(c("data.table", "jsonlite"))'
+      - name: Restore data cache
+        uses: actions/cache/restore@v4
+        with:
+          path: cache
+          key: wid-${{ env.DATA_SOURCE }}-${{ github.run_id }}
+          restore-keys: wid-${{ env.DATA_SOURCE }}-
+      - name: Fetch and build
+        env:
+          YEARS_BACK: ${{ vars.YEARS_BACK || '5' }}
+          FORCE: ${{ inputs.force && 'true' || 'false' }}
+        run: Rscript run.R
+      - name: Save data cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: cache
+          key: wid-${{ env.DATA_SOURCE }}-${{ github.run_id }}
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
