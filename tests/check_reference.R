@@ -10,7 +10,7 @@ REF <- as.numeric(as.POSIXct("2020-12-27", tz = "UTC"))
 meta <- fromJSON(file.path(cache, "out", "meta.json"), simplifyVector = FALSE)
 units <- rbindlist(lapply(meta$units, function(u) data.table(duid = u$id, region = u$region, tech = u$tech, gi = u$gi,
   reg_date = as.Date(u$reg_date %||% NA), first_op = as.Date(u$first_op %||% NA))))
-reg <- readRDS(file.path(cache, "synthetic_register.rds"))   # dated capacity history (synthetic build)
+reg <- readRDS(file.path(cache, "register.rds"))   # register + dated capacity history, saved by run.R
 caph <- reg$caph
 
 # ---- first generation recomputed from every cached month ----
