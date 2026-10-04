@@ -41,6 +41,7 @@ if (SOURCE == "synthetic") {
   for (i in seq_len(nrow(months))) fetch_nem_month(months$y[i], months$m[i], reg$units$duid, NEMC, today)
 }
 units <- copy(reg$units); caph <- reg$caph
+saveRDS(list(units = reg$units, caph = reg$caph, source = SOURCE), file.path(CACHE, "register.rds"))   # for tests/benchmark.R
 log_msg("register: %d wind, %d solar units", sum(units$tech == "wind"), sum(units$tech == "solar"))
 
 # ---- month summaries: coverage, first generation, data end ----
