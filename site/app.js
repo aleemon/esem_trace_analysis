@@ -75,6 +75,10 @@ async function boot() {
   try {
     const t0 = performance.now();
     META = await fetch(DATA + "meta.json").then(r => r.json());
+    // R's JSON writer turns length-1 vectors into scalars; normalise every field the page treats as an array
+    const arr = v => v == null ? [] : Array.isArray(v) ? v : [v];
+    META.years = arr(META.years);
+    META.units.forEach(u => { u.member = arr(u.member); });
     const st = await fetchBin(META.settle.file);
     const [u, r] = st.header.series;
     SETTLE = { weeks: st.header.weeks, U: new Float32Array(st.buf, st.body + u.off, u.len / 4), R: new Float32Array(st.buf, st.body + r.off, r.len / 4),
