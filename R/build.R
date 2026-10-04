@@ -147,7 +147,7 @@ assemble <- function(units, derived, out_dir, n_weeks, extra_meta = list()) {
                        list(id = "R", shape = c(nrow(rts), length(RT_FIELDS), n_weeks), enc = "f32", fields = RT_FIELDS)))
   baskets <- setNames(lapply(derived, function(d) d$basket), vapply(derived, function(d) as.character(d$year), ""))
   member <- function(id) as.integer(names(baskets)[vapply(baskets, function(b) any(vapply(b, function(rr) any(vapply(rr, function(x) id %in% x$duids, TRUE)), TRUE)), TRUE)])
-  meta <- c(list(version = 2L, dt = DT_SEC, years = as.integer(names(baskets)), params = list(cap = CAP_X, floor = FLOOR_F)), extra_meta,
+  meta <- c(list(version = 2L, dt = DT_SEC, years = I(as.integer(names(baskets))), params = list(cap = CAP_X, floor = FLOOR_F)), extra_meta,
             list(regions = lapply(sort(unique(units$region)), function(r) list(id = r, utc_offset = 10L,
                                      n_wind = sum(units$region == r & units$tech == "wind"), n_solar = sum(units$region == r & units$tech == "solar"))),
                  rt = lapply(seq_len(nrow(rts)), function(i) list(region = rts$region[i], tech = rts$tech[i])),
@@ -157,7 +157,7 @@ assemble <- function(units, derived, out_dir, n_weeks, extra_meta = list()) {
                         reg_date = if (is.na(u$reg_date)) NULL else format(u$reg_date),
                         first_gen = if (is.na(u$first_gen)) NULL else format(u$first_gen),
                         first_op = if (is.na(u$first_op)) NULL else format(u$first_op),
-                        member = member(u$duid), block = u$block, slot = u$slot, gi = u$gi)
+                        member = I(member(u$duid)), block = u$block, slot = u$slot, gi = u$gi)
                  }),
                  baskets = lapply(baskets, function(b) lapply(b, function(rr) lapply(rr, function(x) list(n = x$n, cap = round(x$cap, 1))))),
                  idx = do.call(c, lapply(derived, function(d) d$files$idx)),
