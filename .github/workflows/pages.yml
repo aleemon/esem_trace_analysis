@@ -11,10 +11,10 @@ on:
         default: false
   push:
     branches: [main]
-    paths: ["site/**", "R/**", "run.R", "config/**", ".github/workflows/**"]
+    paths: ["site/**", "R/**", "run.R", "config/**", "scripts/**", ".github/workflows/**"]
 
 permissions:
-  contents: read
+  contents: write        # the build job keeps the data-<source> release up to date
   pages: write
   id-token: write
 
@@ -45,11 +45,21 @@ jobs:
           path: cache
           key: wid-${{ env.DATA_SOURCE }}-${{ github.run_id }}
           restore-keys: wid-${{ env.DATA_SOURCE }}-
+      - name: Restore missing extracts from the data release
+        if: env.DATA_SOURCE == 'aemo'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/release_sync.sh restore
       - name: Fetch and build
         env:
           YEARS_BACK: ${{ vars.YEARS_BACK || '5' }}
           FORCE: ${{ inputs.force && 'true' || 'false' }}
         run: Rscript run.R
+      - name: Back up extracts to the data release
+        if: always() && env.DATA_SOURCE == 'aemo'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/release_sync.sh publish
       - name: Save data cache
         if: always()
         uses: actions/cache/save@v4
