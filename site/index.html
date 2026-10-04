@@ -123,9 +123,9 @@ td.l{text-align:left;font-family:var(--f-ui)}
 
 <div class="wrap">
   <nav class="tabs" role="tablist">
-    <button role="tab" id="t-fa" aria-selected="true" data-tab="farm">Farm vs reference</button>
-    <button role="tab" id="t-st" aria-selected="false" data-tab="settle">Settlement</button>
-    <button role="tab" id="t-fl" aria-selected="false" data-tab="fleet">Fleet comparison</button>
+    <button role="tab" id="t-fa" aria-selected="true" data-tab="farm">Reference Trace Analysis</button>
+    <button role="tab" id="t-st" aria-selected="false" data-tab="settle">Settlement Anslysis</button>
+    <button role="tab" id="t-fl" aria-selected="false" data-tab="fleet">Fleet Comparison</button>
   </nav>
   <div class="unitbar" id="unitbar"></div>
 
@@ -138,7 +138,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
       <span class="status" id="exstatus"></span>
     </div>
     <div class="grid">
-      <div class="panel"><h3 id="p1t">Regional price</h3><p class="sub">$/MWh settlement price · mean line, min–max band per pixel · drag to zoom, double-click to reset</p><div id="p1"></div></div>
+      <div class="panel"><h3 id="p1t">Regional price</h3><p class="sub">Regional Reference Price ($/MWh) · mean line, min–max band per pixel · drag to zoom, double-click to reset</p><div id="p1"></div></div>
       <div class="panel"><h3 id="p2t">Farm output vs regional reference trace</h3><p class="sub" id="p2s"></p><div id="p2"></div></div>
     </div>
   </section>
@@ -146,7 +146,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
   <section id="settle" role="tabpanel" hidden>
     <div class="layout side">
       <div class="panel">
-        <h3>Contract</h3><p class="sub">Settlement = trace CF × quantity × (fixed − floating), per 5-min interval, summed by week (Sun–Sat). Positive = paid to the generator.</p>
+        <h3>Contract</h3><p class="sub">Settlement = trace CF × quantity × (fixed − floating), per 5-min interval. Settled by AEMO week (Sun–Sat). Positive = paid to the generator.</p>
         <div class="contract">
           <label for="k"><span>Fixed price $/MWh</span><input type="number" id="k" value="75" step="1"></label>
           <label for="q"><span>Contract quantity MW</span><input type="number" id="q" value="100" step="1" min="0"></label>
@@ -156,22 +156,22 @@ td.l{text-align:left;font-family:var(--f-ui)}
         <div class="appr">
           <div class="nm"><span class="tag a">A</span><b>Exposed</b><small>Floating = spot price</small></div>
           <div class="seg" role="group" aria-label="Trace for A"><button data-ap="a" data-tr="so" aria-pressed="true">Sent-out</button><button data-ap="a" data-tr="ug" aria-pressed="false">UIGF</button></div>
-          <div class="nm"><span class="tag b">B</span><b>Cap + floor</b><small id="bdesc">Floating clamped to $0 – $600</small></div>
+          <div class="nm"><span class="tag b">B</span><b>Cap + floor</b><small id="bdesc">Floating price limited to $0 – $600</small></div>
           <div class="seg" role="group" aria-label="Trace for B"><button data-ap="b" data-tr="so" aria-pressed="false">Sent-out</button><button data-ap="b" data-tr="ug" aria-pressed="true">UIGF</button></div>
-          <div class="nm"><span class="tag c">C</span><b>Cap + volume knockout</b><small id="cdesc">Floating capped at $600; quantity 0 when price &lt; 0</small></div>
+          <div class="nm"><span class="tag c">C</span><b>Cap + volume knockout</b><small id="cdesc">Floating price capped at $600; quantity 0 when price &lt; 0</small></div>
           <div class="seg" role="group" aria-label="Trace for C"><button data-ap="c" data-tr="so" aria-pressed="true">Sent-out</button><button data-ap="c" data-tr="ug" aria-pressed="false">UIGF</button></div>
         </div>
-        <p class="note">The UIGF trace differs from sent-out only in negative-price intervals, so it cannot change approach C, where those intervals are knocked out.</p>
-        <p class="note">Merchant = farm sent-out × spot, floored at $0 when the price is negative.</p>
+        <p class="note">NB: The UIGF trace differs from sent-out only in negative-price intervals, so approach C doesn't change when those intervals are knocked out.</p>
+        <p class="note">NB: Merchant revenue = farm sent-out × spot, floored at $0 when the price is negative.</p>
       </div>
       <div class="stack">
         <div class="kpis" id="stkpi" style="margin:0"></div>
-        <div class="panel"><h3>All approaches against both reference traces</h3><p class="sub" id="cmps"></p><div class="tblwrap" id="cmp" style="max-height:none"></div></div>
+        <div class="panel"><h3>Comaprison of revenues against reference trace approaches</h3><p class="sub" id="cmps"></p><div class="tblwrap" id="cmp" style="max-height:none"></div></div>
       </div>
     </div>
     <div class="grid g2" style="margin-top:14px">
       <div class="panel"><h3>Cumulative net revenue</h3><p class="sub">Merchant plus contract settlement, $M · selected trace per approach</p><div id="st1"></div></div>
-      <div class="panel"><h3>What moves settlement between approaches</h3><p class="sub" id="st2s"></p><div id="st2"></div></div>
+      <div class="panel"><h3>Change in settlement from merchant-only</h3><p class="sub" id="st2s"></p><div id="st2"></div></div>
       <div class="panel" style="grid-column:1/-1"><h3>Weekly net revenue</h3><p class="sub">$k per week · merchant vs each approach</p><div id="st3"></div></div>
     </div>
   </section>
