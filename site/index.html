@@ -174,7 +174,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
           <div class="nm"><span class="tag c">C</span><b>Cap + volume knockout</b><small id="cdesc">Floating capped at $600; quantity 0 when price &lt; 0</small></div>
           <div class="seg" role="group" aria-label="Trace for C"><button data-ap="c" data-tr="so" aria-pressed="true">Sent-out</button><button data-ap="c" data-tr="ug" aria-pressed="false">UIGF</button></div>
         </div>
-        <p class="note">NB: The UIGF trace differs from sent-out only in negative-price intervals, so approach C is unchanged when those intervals are knocked out.</p>
+        <p class="note">NB: The UIGF trace differs from sent-out only in negative-price intervals, so approach C is unchanged where those intervals are knocked out.</p>
         <p class="note">NB: Merchant = farm sent-out × spot, floored at $0 when the price is negative.</p>
       </div>
       <div class="stack">
@@ -187,6 +187,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
       <div class="panel"><h3>What moves settlement between approaches</h3><p class="sub" id="st2s"></p><div id="st2"></div></div>
       <div class="panel" style="grid-column:1/-1"><h3>Distribution of weekly net revenue</h3><p class="sub" id="st4s"></p><div id="st4"></div></div>
       <div class="panel" style="grid-column:1/-1"><h3>Weekly net revenue</h3><p class="sub">$k per week · merchant vs each approach · complete weeks only (the same weeks as the table's statistics); partial weeks at the period edges are hidden here but included in totals</p><div id="st3"></div></div>
+      <div class="panel" style="grid-column:1/-1"><h3>Mean earnings vs earnings-at-risk by contract volume</h3><p class="sub" id="st5s"></p><div id="st5"></div></div>
     </div>
   </section>
 
