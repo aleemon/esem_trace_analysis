@@ -69,6 +69,7 @@ const S = { tab: "farm", unit: null, y0: 0, y1: 0, units: "cf", showug: false, a
   k: 75, q: 100, cap: 600, floor: 0, tr: { a: "so", b: "ug", c: "so" },
   ftech: "wind", freg: "", fk: 75, fr: 100, fpair: "dflt", fsort: { k: "net_b", d: -1 } };
 let META, SETTLE, UNIT = new Map();
+const LAST = {};   // latest data behind each chart/table, for downloads
 const cache = new Map();
 const getFile = f => { if (!cache.has(f)) cache.set(f, fetchBin(f)); return cache.get(f); };
 
@@ -98,7 +99,7 @@ async function boot() {
     for (const r of META.regions) $("freg").add(new Option(r.id.replace("1", ""), r.id));
     const first = META.units.filter(x => x.tech === "wind").sort((a, b) => b.cap - a.cap)[0] || META.units[0];
     selectUnit(first.id, false);
-    wire(); render();
+    wire(); addDownloads(); render();
   } catch (e) { $("dsinfo").innerHTML = `<span class="err">Couldn't load data: ${e.message}</span>`; console.error(e); }
 }
 function selectUnit(id, rerender = true) {
@@ -163,7 +164,7 @@ function renderUnitBar() {
   const yrs = META.years.map(y => `<span class="yr ${u.member.includes(y) ? "in" : ""}" title="${u.member.includes(y) ? "In" : "Not in"} the ${y} ${u.region} ${u.tech} reference basket">${y}</span>`).join("");
   $("unitbar").innerHTML = `<b>${u.name}</b><span>${u.id} · ${u.region} · ${TECH[u.tech]} · ${fmt(u.cap, 1)} MW</span>
     <span>Registered ${u.reg_date || "–"} · first generation ${!u.first_gen ? "none yet" : (u.first_op && u.first_op < u.first_gen ? "before the data history starts" : u.first_gen)} · operational from ${u.first_op || "–"}</span>
-    <span style="display:inline-flex;gap:4px;align-items:center">Reference basket ${yrs}</span>`;
+    <span style="display:inline-flex;gap:4px;align-items:center">Reference basket ${yrs} <a href="${DATA}baskets.csv" download style="margin-left:6px;font-size:.9em">basket list (CSV)</a></span>`;
 }
 
 // ---------- data for one unit over the period ----------
@@ -289,6 +290,7 @@ function drawAverages() {
   const keys = [...groups.keys()].filter(x => x && groups.get(x).n > 0).sort();
   const val = f => keys.map(x => { const g = groups.get(x); return g.n >= (byWeek ? 0.5 * 2016 : 0.5 * 8640) ? g[f] / g.n * k : null; });
   const farm = val("f"), so = val("so"), ug = val("ug");
+  LAST.avg = { keys, farm, so, ug, byWeek, cf, u };
   let ef = 0, es = 0; farm.forEach((v, i) => { if (v != null) { ef += v; es += so[i]; } });
   $("p3t").textContent = `${byWeek ? "Weekly" : "Monthly"} average output vs reference trace`;
   $("p3s").textContent = `${cf ? "Mean capacity factor" : "Mean MW (traces scaled to " + fmt(u.cap, 1) + " MW)"} per ${byWeek ? "billing week (Sun–Sat)" : "calendar month"}, over intervals where the farm and both traces have data · farm ÷ reference (sent-out) over the period: ${fmt(es ? ef / es * 100 : NaN, 1)}% · periods with less than half their intervals are left out`;
@@ -397,8 +399,8 @@ async function renderSettle() {
   let E; try { E = await loadUnit(); } catch (e) { $("stkpi").innerHTML = `<span class="err">${e.message}</span>`; return; }
   if (tok !== exToken) return; EX = E;
   const u = E.u;
-  $("bdesc").textContent = `Floating price limited to ${money(S.floor, 0)} – ${money(S.cap, 0)}`;
-  $("cdesc").textContent = `Floating price capped at ${money(S.cap, 0)}; quantity 0 when price < $0`;
+  $("bdesc").textContent = `Floating limited to ${money(S.floor, 0)} – ${money(S.cap, 0)}`;
+  $("cdesc").textContent = `Floating capped at ${money(S.cap, 0)}; quantity 0 when price < $0`;
   const R = settle(E, S);
   const full = []; for (let w = 0; w < R.nW; w++) if (R.nint[w] >= 0.9 * 2016 && R.ok[w] >= 0.9 * 2016) full.push(w);
   const M = sum(R.merch), EG = sum(R.energy), MR = sum(R.merchRaw);
@@ -441,6 +443,11 @@ async function renderSettle() {
   lineChart($("st3"), { xs: wk, series: [{ name: "Merchant", color: css("--ink-3"), vals: Array.from(R.merch, keepW), dash: "4 3", width: 1.5 },
     ...["a", "b", "c"].map((a, i) => ({ name: `${a.toUpperCase()} · ${S.tr[a] === "so" ? "SO" : "UIGF"}`, color: css(["--s1", "--s2", "--s7"][i]), vals: Array.from(sel[a].weekly, keepW), width: 1.5 }))],
     yfmt: v => v == null ? "–" : money(v, 0) + "k", w: W3, h: 380, title: "Weekly net revenue", xlab: i => `Week from ${wk[i]}` });
+  // distribution of weekly net revenue, complete weeks only
+  const fw = a => full.map(w => a[w] / 1000);
+  boxRows($("st4"), [["Merchant only", fw(R.merch), "m"],
+    ...["a", "b", "c"].map(a => [`${AP[a]} (${TRS[S.tr[a]]})`, fw(sel[a].weekly), a])], v => money(v, 0) + "k", Math.max(320, $("st4").clientWidth || 1200), "$k", { extremes: true, noun: "weeks", labelW: 290 });
+  $("st4s").textContent = `Weekly net revenue (merchant + settlement), $k · ${full.length} complete weeks · box = P25–P75, line = median, whisker = P10–P90, circles = worst and best week · selected trace per approach`;
   // attribution bridge (A -> B and A -> C, each on its own selected trace)
   const tb = S.tr.b, tc = S.tr.c, aB = rows.find(r => r.key === "a_" + tb), aC = rows.find(r => r.key === "a_" + tc);
   const traceEffB = tb === S.tr.a ? 0 : aB.S - sel.a.S;
@@ -456,6 +463,7 @@ async function renderSettle() {
     { label: `= C on ${TRS[tc]} trace`, v: sel.c.S, kind: "total" }];
   $("st2s").textContent = `Settlement $M for the period · each step is the change in settlement from that rule alone`;
   bridge($("st2"), bridgeRows, Math.max(320, $("st2").clientWidth || 700));
+  LAST.settle = { R, rows, full, bridgeRows, u, M, EG, p: { k: S.k, q: S.q, cap: S.cap, floor: S.floor, tr: { ...S.tr } } };
   window.__settle = { R, rows, M, EG };   // exposed for verification
 }
 
@@ -503,13 +511,14 @@ function renderFleet() {
     `<tr data-id="${r.u.id}" class="${r.u.id === S.unit ? "sel" : ""}"><td>${r.u.name}</td><td>${r.u.region.replace("1", "")}</td><td>${fmt(r.u.cap)}</td><td>${pc(r.cf)}</td><td>${money(r.merch, 1)}</td><td>${money(r.net_a, 1)}</td><td>${money(r.net_b, 1)}</td><td>${money(r.net_c, 1)}</td><td>${pcs(r.red_a)}</td><td>${pcs(r.red_b)}</td><td>${pcs(r.red_c)}</td><td>${r.n}</td></tr>`).join("")}</tbody></table>`;
   $("fl3").querySelectorAll("th").forEach(th => th.onclick = () => { const c = th.dataset.k; S.fsort = { k: c, d: S.fsort.k === c ? -S.fsort.d : (c === "name" || c === "region" ? 1 : -1) }; renderFleet(); });
   $("fl3").querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => { selectUnit(tr.dataset.id, false); document.querySelector('[data-tab="farm"]').click(); });
+  LAST.fleet = { rows, p: { k: S.fk, r: S.fr, pair: S.fpair, tech: S.ftech, reg: S.freg } };
   window.__fleet = rows;
 }
-function boxRows(el, groups, f, w, unit) {
-  const L = 210, Rr = 76, rh = 42, T = 28, h = T + groups.length * rh + 8;
+function boxRows(el, groups, f, w, unit, opt = {}) {   // opt: { extremes: draw min/max and scale to them, noun: "assets" | "weeks" }
+  const L = opt.labelW || 210, Rr = opt.extremes ? 110 : 76, rh = 42, T = 28, h = T + groups.length * rh + 8;
   const all = groups.flatMap(g => g[1]).filter(isFinite); if (!all.length) { el.innerHTML = `<p class="note">No assets with data in this period.</p>`; return; }
-  const sorted = all.slice().sort((a, b) => a - b), lo0 = quant(sorted, 0.01), hi0 = quant(sorted, 0.99);
-  const ticks = niceTicks(Math.min(lo0, 0), hi0, 5), a = ticks[0], b = ticks.at(-1), X = v => L + (Math.max(a, Math.min(b, v)) - a) / (b - a) * (w - L - Rr);
+  const sorted = all.slice().sort((a, b) => a - b), lo0 = opt.extremes ? sorted[0] : quant(sorted, 0.01), hi0 = opt.extremes ? sorted.at(-1) : quant(sorted, 0.99);
+  const ticks = niceTicks(Math.min(lo0, 0), Math.max(hi0, 0), 6), a = Math.min(ticks[0], lo0), b = Math.max(ticks.at(-1), hi0, a + 1e-9), X = v => L + (Math.max(a, Math.min(b, v)) - a) / (b - a) * (w - L - Rr);
   let g = "";
   ticks.forEach(t => g += `<line x1="${X(t)}" x2="${X(t)}" y1="${T - 6}" y2="${h - 6}" stroke="var(--rule-2)"/><text x="${X(t)}" y="${T - 10}" text-anchor="middle" font-size="12.5" class="num" fill="var(--ink-3)">${f(t)}</text>`);
   const col = { m: "var(--ink-3)", a: "var(--s1)", b: "var(--s2)", c: "var(--s7)" };
@@ -521,13 +530,136 @@ function boxRows(el, groups, f, w, unit) {
       <line x1="${X(q[0])}" x2="${X(q[4])}" y1="${y}" y2="${y}" stroke="${col[c]}" stroke-width="1.25"/>
       <rect x="${X(q[1])}" y="${y - 7}" width="${Math.max(1, X(q[3]) - X(q[1]))}" height="14" rx="3" fill="${col[c]}" fill-opacity=".22" stroke="${col[c]}"/>
       <line x1="${X(q[2])}" x2="${X(q[2])}" y1="${y - 8}" y2="${y + 8}" stroke="${col[c]}" stroke-width="2.5"/>
-      <text x="${w - Rr + 8}" y="${y + 4}" font-size="12.5" class="num" fill="var(--ink-2)">${f(q[2])}</text></g>`;
+      ${opt.extremes ? `<circle cx="${X(s[0])}" cy="${y}" r="3.5" fill="var(--surface)" stroke="${col[c]}" stroke-width="1.5"/><circle cx="${X(s.at(-1))}" cy="${y}" r="3.5" fill="var(--surface)" stroke="${col[c]}" stroke-width="1.5"/>` : ""}
+      <text x="${w - Rr + 18}" y="${y + 4}" font-size="12.5" class="num" fill="var(--ink-2)">${f(q[2])}</text></g>`;
   });
-  el.innerHTML = svgEl(w, h, g, "Distribution across assets");
+  if (a < 0 && b > 0) g += `<line x1="${X(0)}" x2="${X(0)}" y1="${T - 6}" y2="${h - 6}" stroke="var(--ink-3)"/>`;
+  el.innerHTML = svgEl(w, h, g, opt.noun === "weeks" ? "Distribution of weekly net revenue" : "Distribution across assets");
   el.querySelectorAll("g[data-i]").forEach(n => {
     const [name, vals] = groups[+n.dataset.i], s = vals.filter(isFinite).sort((x, y) => x - y);
-    n.onmousemove = ev => showTip(`<b>${name}</b><div class="num">median ${f(quant(s, 0.5))}</div><div class="num">P10 ${f(quant(s, 0.1))} · P90 ${f(quant(s, 0.9))}</div><div class="num">${s.length} assets</div>`, ev);
+    n.onmousemove = ev => showTip(`<b>${name}</b><div class="num">median ${f(quant(s, 0.5))}</div><div class="num">P10 ${f(quant(s, 0.1))} · P90 ${f(quant(s, 0.9))}</div>${opt.extremes ? `<div class="num">min ${f(s[0])} · max ${f(s.at(-1))}</div><div class="num">mean ${f(s.reduce((x, y) => x + y, 0) / s.length)}</div>` : ""}<div class="num">${s.length} ${opt.noun || "assets"}</div>`, ev);
     n.onmouseleave = hideTip;
   });
+}
+// ---------- downloads: PNG of any chart or table, CSV of the data behind it ----------
+function save(blob, name) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+}
+const csvCell = v => v == null || (typeof v === "number" && !isFinite(v)) ? "" : typeof v === "number" ? String(+v.toPrecision(10)) : /[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : String(v);
+const toCsv = (head, rows) => [head.join(","), ...rows.map(r => r.map(csvCell).join(","))].join("\n") + "\n";
+const saveCsv = (name, head, rows) => save(new Blob([toCsv(head, rows)], { type: "text/csv" }), name + ".csv");
+const slug = t => String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+const period = () => S.y0 === S.y1 ? `${S.y0}` : `${S.y0}-${S.y1}`;
+const fileBase = key => `${S.tab === "fleet" ? S.ftech : S.unit}_${period()}_${key}`;
+const mtime = t => new Date((t + NEM_OFF) * 1000).toISOString().slice(0, 16).replace("T", " ");   // market time, interval ending
+// add a title block above an image and save as PNG
+function composePng(src, w, h, panel, name) {
+  const dpr = 2, title = panel.querySelector("h3")?.textContent || "", sub = panel.querySelector(".sub")?.textContent || "";
+  const pad = 24, tH = 30;
+  const m = document.createElement("canvas").getContext("2d"); m.font = `13px ${css("--f-ui")}`;
+  const lines = []; let cur = "";
+  for (const word of sub.split(/\s+/).filter(Boolean)) { const t = cur ? cur + " " + word : word; if (m.measureText(t).width > w && cur) { lines.push(cur); cur = word; } else cur = t; }
+  if (cur) lines.push(cur);
+  const top = pad + tH + lines.length * 18 + 10;
+  const c = document.createElement("canvas"); c.width = (w + pad * 2) * dpr; c.height = (h + top + pad) * dpr;
+  const x = c.getContext("2d"); x.scale(dpr, dpr);
+  x.fillStyle = css("--surface"); x.fillRect(0, 0, w + pad * 2, h + top + pad);
+  x.fillStyle = css("--ink"); x.font = `600 18px ${css("--f-ui")}`; x.fillText(title, pad, pad + 18);
+  x.fillStyle = css("--ink-3"); x.font = `13px ${css("--f-ui")}`; lines.forEach((l, i) => x.fillText(l, pad, pad + tH + 10 + i * 18));
+  x.drawImage(src, pad, top, w, h);
+  c.toBlob(b => save(b, name + ".png"), "image/png");
+}
+function svgPng(el, panel, name) {
+  const svg = el.querySelector("svg"); if (!svg) return;
+  const r = svg.getBoundingClientRect(), clone = svg.cloneNode(true);
+  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg"); clone.setAttribute("width", r.width); clone.setAttribute("height", r.height);
+  // CSS variables don't exist outside the page: resolve them, and carry the fonts
+  const fix = v => v && v.includes("var(") ? v.replace(/var\((--[a-z0-9-]+)\)/g, (_, n) => css(n)) : v;
+  clone.querySelectorAll("*").forEach(n => { for (const at of ["fill", "stroke"]) if (n.hasAttribute(at)) n.setAttribute(at, fix(n.getAttribute(at))); });
+  const st = document.createElementNS("http://www.w3.org/2000/svg", "style");
+  st.textContent = `text{font-family:${css("--f-ui")}} .num{font-family:${css("--f-num")}}`; clone.insertBefore(st, clone.firstChild);
+  const img = new Image();
+  img.onload = () => composePng(img, r.width, r.height, panel, name);
+  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(clone));
+}
+function uplotPng(u, panel, name) {
+  // canvas plus a drawn legend (uPlot's legend is HTML)
+  const cv = u.ctx.canvas, w = u.width, h = u.height, items = u.series.slice(1).filter(s => s.show !== false && s.width !== 0 && s.label && s.stroke && !/^(max|min)$/.test(s.label));
+  const lh = 26, c = document.createElement("canvas"); c.width = w * 2; c.height = (h + lh) * 2;
+  const x = c.getContext("2d"); x.scale(2, 2); x.drawImage(cv, 0, 0, w, h);
+  let lx = 70; x.font = `13px ${css("--f-ui")}`;
+  items.forEach(s => { const col = typeof s.stroke === "function" ? s.stroke(u) : s.stroke; x.fillStyle = col; x.fillRect(lx, h + 8, 14, 3); x.fillStyle = css("--ink-2"); x.fillText(s.label, lx + 20, h + 14); lx += 34 + x.measureText(s.label).width; });
+  composePng(c, w, h + lh, panel, name);
+}
+let h2cLoading = null;
+const loadH2C = () => h2cLoading || (h2cLoading = new Promise((ok, no) => { if (window.html2canvas) return ok(); const sc = document.createElement("script"); sc.src = "vendor/html2canvas.min.js"; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); }));
+async function tablePng(el, panel, name) {
+  await loadH2C();
+  const mh = el.style.maxHeight; el.style.maxHeight = "none";        // capture every row, not just the scrolled view
+  try { const c = await html2canvas(el, { backgroundColor: css("--surface"), scale: 2, logging: false }); composePng(c, c.width / 2, c.height / 2, panel, name); }
+  finally { el.style.maxHeight = mh; }
+}
+// CSV builders
+function farmCsv() {
+  const E = EX; if (!E) return;
+  // the zoomed window if zoomed in, otherwise the whole selected period
+  const xs = plots[0]?.scales.x, zoomed = xs && xs.min != null && (xs.max - xs.min) < (E.x1 - E.x0) * 0.98;
+  const i0 = zoomed ? Math.max(0, Math.floor((xs.min - E.T0) / E.dt)) : 0, i1 = zoomed ? Math.min(E.N - 1, Math.ceil((xs.max - E.T0) / E.dt)) : E.N - 1;
+  const r = (v, d) => v === v ? +v.toFixed(d) : null;
+  const rows = []; for (let i = i0; i <= i1; i++) rows.push([mtime(E.T0 + i * E.dt), r(E.price[i], 2), r(E.so[i], 1), r(E.ug[i], 1), r(E.so[i] / E.u.cap, 4), r(E.tso[i], 4), r(E.tug[i], 4)]);
+  saveCsv(fileBase("5min"), ["interval_ending_market_time", "rrp", "farm_sentout_mw", "farm_uigf_mw", "farm_cf", "ref_sentout_cf", "ref_uigf_on_negative_cf"], rows);
+}
+function avgCsv() {
+  const A = LAST.avg; if (!A) return;
+  saveCsv(fileBase(A.byWeek ? "weekly-average" : "monthly-average"), [A.byWeek ? "week_start" : "month", `farm_${A.cf ? "cf" : "mw"}`, `ref_sentout_${A.cf ? "cf" : "mw"}`, `ref_uigf_${A.cf ? "cf" : "mw"}`], A.keys.map((k, i) => [A.byWeek ? k : k.slice(0, 7), A.farm[i], A.so[i], A.ug[i]]));
+}
+function weeklyCsv() {
+  const L = LAST.settle; if (!L) return; const { R, rows, full, p } = L, inFull = new Set(full);
+  const head = ["week_start", "complete_week", "fixed_price", "contract_mw", "cap", "floor", "farm_mwh", "merchant_floored", "merchant_unfloored"];
+  rows.forEach(r => head.push(`${r.key}_contract_mwh`, `${r.key}_settlement`, `${r.key}_net`));
+  const out = [];
+  for (let w = 0; w < R.nW; w++) { const line = [SETTLE.weeks[R.w0 + w], inFull.has(w) ? 1 : 0, p.k, p.q, p.cap, p.floor, R.energy[w], R.merch[w], R.merchRaw[w]]; rows.forEach(r => line.push(R["v_" + r.key][w], r.s[w], r.weekly[w])); out.push(line); }
+  saveCsv(fileBase("weekly-settlement"), head, out);
+}
+function cmpCsv() {
+  const L = LAST.settle; if (!L) return; const { rows, M, EG, p } = L;
+  saveCsv(fileBase("approach-comparison"), ["approach", "trace", "selected", "contract_mwh", "settlement", "net_revenue", "net_per_mwh", "vs_merchant_per_mwh", "weekly_sd", "weekly_downside_sd", "p10_week", "worst_week", "worst_week_start"],
+    [["merchant", "", "", "", "", M, M / EG, 0, "", "", "", "", ""], ...rows.map(r => [AP[r.ap], TRN[r.tr], p.tr[r.ap] === r.tr ? 1 : 0, r.V, r.S, r.net, r.net / EG, (r.net - M) / EG, r.sd, r.dsd, r.p10, r.worst, SETTLE.weeks[L.R.w0 + r.worstWk]])]);
+}
+function bridgeCsv() { const L = LAST.settle; if (!L) return; saveCsv(fileBase("settlement-attribution"), ["step", "kind", "settlement"], L.bridgeRows.map(r => [r.label, r.kind, r.v])); }
+function boxCsv() {
+  const L = LAST.settle; if (!L) return; const { R, full, rows, p } = L;
+  const series = [["merchant", Array.from(full, w => R.merch[w])], ...["a", "b", "c"].map(a => { const r = rows.find(x => x.key === `${a}_${p.tr[a]}`); return [`${AP[a]} (${TRS[p.tr[a]]})`, full.map(w => r.weekly[w])]; })];
+  saveCsv(fileBase("weekly-net-distribution"), ["series", "weeks", "min", "p10", "p25", "median", "p75", "p90", "max", "mean", "sd", "downside_sd"],
+    series.map(([n, v]) => { const s = v.slice().sort((a, b) => a - b); return [n, s.length, s[0], quant(s, .1), quant(s, .25), quant(s, .5), quant(s, .75), quant(s, .9), s.at(-1), s.reduce((a, b) => a + b, 0) / s.length, sd(s), dsd(s)]; }));
+}
+function fleetCsv() {
+  const F = LAST.fleet; if (!F) return;
+  saveCsv(fileBase("fleet"), ["duid", "name", "region", "tech", "capacity_mw", "weeks", "cf", "merchant_per_mwh", "a_net_per_mwh", "b_net_per_mwh", "c_net_per_mwh", "a_downside_sd_vs_merchant", "b_downside_sd_vs_merchant", "c_downside_sd_vs_merchant", "fixed_price", "contract_pct_capacity", "trace_pairing"],
+    F.rows.map(r => [r.u.id, r.u.name, r.u.region, r.u.tech, r.u.cap, r.n, r.cf, r.merch, r.net_a, r.net_b, r.net_c, r.red_a, r.red_b, r.red_c, F.p.k, F.p.r, F.p.pair]));
+}
+const EXPORTS = {
+  p1: { png: (pn, n) => plots[0] && uplotPng(plots[0], pn, n), csv: farmCsv },
+  p2: { png: (pn, n) => plots[1] && uplotPng(plots[1], pn, n), csv: farmCsv },
+  p3: { png: (pn, n) => svgPng($("p3"), pn, n), csv: avgCsv },
+  cmp: { png: (pn, n) => tablePng($("cmp"), pn, n), csv: cmpCsv },
+  st1: { png: (pn, n) => svgPng($("st1"), pn, n), csv: weeklyCsv },
+  st2: { png: (pn, n) => svgPng($("st2"), pn, n), csv: bridgeCsv },
+  st4: { png: (pn, n) => svgPng($("st4"), pn, n), csv: boxCsv },
+  st3: { png: (pn, n) => svgPng($("st3"), pn, n), csv: weeklyCsv },
+  fl1: { png: (pn, n) => svgPng($("fl1"), pn, n), csv: fleetCsv },
+  fl2: { png: (pn, n) => svgPng($("fl2"), pn, n), csv: fleetCsv },
+  fl3: { png: (pn, n) => tablePng($("fl3"), pn, n), csv: fleetCsv },
+};
+function addDownloads() {
+  for (const [key, ex] of Object.entries(EXPORTS)) {
+    const target = $(key), panel = target?.closest(".panel"); if (!panel) continue;
+    const box = document.createElement("div"); box.className = "dl";
+    box.innerHTML = `<button type="button" data-f="png" title="Download this chart as a PNG image">PNG</button><button type="button" data-f="csv" title="Download the data behind this chart as CSV">CSV</button>`;
+    box.onclick = e => { const b = e.target.closest("button"); if (!b) return; const name = fileBase(slug(panel.querySelector("h3")?.textContent || key));
+      try { b.dataset.f === "png" ? ex.png(panel, name) : ex.csv(); } catch (err) { console.error(err); } };
+    const tb = panel.querySelector(".toolbar"); if (tb) tb.appendChild(box); else panel.insertBefore(box, panel.firstChild);
+  }
 }
 if (window.uPlot) boot(); else $("dsinfo").innerHTML = `<span class="err">Chart library failed to load.</span>`;
