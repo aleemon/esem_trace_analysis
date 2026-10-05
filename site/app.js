@@ -593,7 +593,7 @@ function uplotPng(u, panel, name) {
   composePng(c, w, h + lh, panel, name);
 }
 let h2cLoading = null;
-const loadH2C = () => h2cLoading || (h2cLoading = new Promise((ok, no) => { if (window.html2canvas) return ok(); const sc = document.createElement("script"); sc.src = "vendor/html2canvas.min.js"; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); }));
+const loadH2C = () => h2cLoading || (h2cLoading = new Promise((ok, no) => { if (window.html2canvas) return ok(); const sc = document.createElement("script"); sc.src = "vendor/html2canvas.min.js"; sc.onload = ok; sc.onerror = () => { h2cLoading = null; sc.remove(); no(new Error("vendor/html2canvas.min.js did not load")); }; document.head.appendChild(sc); }));
 async function tablePng(el, panel, name) {
   await loadH2C();
   const mh = el.style.maxHeight; el.style.maxHeight = "none";        // capture every row, not just the scrolled view
@@ -658,7 +658,8 @@ function addDownloads() {
     const box = document.createElement("div"); box.className = "dl";
     box.innerHTML = `<button type="button" data-f="png" title="Download this chart as a PNG image">PNG</button><button type="button" data-f="csv" title="Download the data behind this chart as CSV">CSV</button>`;
     box.onclick = e => { const b = e.target.closest("button"); if (!b) return; const name = fileBase(slug(panel.querySelector("h3")?.textContent || key));
-      try { b.dataset.f === "png" ? ex.png(panel, name) : ex.csv(); } catch (err) { console.error(err); } };
+      const fail = err => { console.error(err); const t = b.textContent; b.textContent = "failed"; b.title = String(err && err.message || err); setTimeout(() => { b.textContent = t; }, 2500); };
+      try { Promise.resolve(b.dataset.f === "png" ? ex.png(panel, name) : ex.csv()).catch(fail); } catch (err) { fail(err); } };
     const tb = panel.querySelector(".toolbar"); if (tb) tb.appendChild(box); else panel.insertBefore(box, panel.firstChild);
   }
 }
