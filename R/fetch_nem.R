@@ -75,7 +75,7 @@ shape_disp <- function(d) {
                                      cleared = num(TOTALCLEARED), avail = num(AVAILABILITY), uigf = num(UIGF))], by = c("t", "duid"))
 }
 shape_price <- function(d) if (is.null(d)) NULL else unique(d[num(INTERVENTION) == 0, .(t = aemo_time(SETTLEMENTDATE), region = chr(REGIONID), rrp = num(RRP))], by = c("t", "region"))
-expand_30 <- function(p) p[, .(t = t - c(25, 20, 15, 10, 5, 0) * 60, rrp = rrp), by = .(tt = t, region)][, tt := NULL][]
+expand_30 <- function(p) p[, .(t = t - c(25, 20, 15, 10, 5, 0) * 60, rrp = rrp), by = .(tt = t, region)][, .(t, region, rrp)]   # same column order as shape_price
 disp_keep <- c("SETTLEMENTDATE", "DUID", "INTERVENTION", "INITIALMW", "TOTALCLEARED", "AVAILABILITY")
 
 # ---------- MMSDM ----------
@@ -178,7 +178,7 @@ fetch_nem_month <- function(y, m, duids, cache_dir, today = Sys.Date()) {
     lo <- as.numeric(as.POSIXct(m0, tz = "UTC")) - NEM_OFF; hi <- as.numeric(as.POSIXct(m1 + 1, tz = "UTC")) - NEM_OFF
     cut <- function(k, by) { d <- rbindlist(lapply(parts, `[[`, k)); unique(d[t > lo & t <= hi], by = by) }
     x <- list(scada = cut("scada", c("t", "duid")), disp = cut("disp", c("t", "duid")), price = cut("price", c("t", "region")), complete = FALSE)
-    note_fetch(y, m, "daily", err)
+    note_fetch(y, m, "daily", "not in MMSDM yet (normal for the last 1-2 months); built from daily reports")
   }
   x$duids <- duids
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE); saveRDS(x, f)

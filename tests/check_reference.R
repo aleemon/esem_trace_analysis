@@ -32,9 +32,9 @@ t0 <- as.numeric(as.POSIXct(sprintf("%d-01-01 00:05", y), tz = "UTC")) - OFF
 t1 <- as.numeric(as.POSIXct(sprintf("%d-01-01 00:00", y + 1), tz = "UTC")) - OFF
 keys <- c(sprintf("%d%02d", y, 1:12), sprintf("%d01", y + 1)); keys <- keys[file.exists(file.path(cache, "nem", paste0(keys, ".rds")))]
 mm <- lapply(keys, function(k) readRDS(file.path(cache, "nem", paste0(k, ".rds"))))
-sc <- rbindlist(lapply(mm, `[[`, "scada"))[t >= t0 & t <= t1]
-dp <- rbindlist(lapply(mm, `[[`, "disp"))[t >= t0 & t <= t1]
-pr <- rbindlist(lapply(mm, `[[`, "price"))[t >= t0 & t <= t1 & region == r, .(t, rrp)]
+sc <- rbindlist(lapply(mm, `[[`, "scada"), use.names = TRUE)[t >= t0 & t <= t1]
+dp <- rbindlist(lapply(mm, `[[`, "disp"), use.names = TRUE)[t >= t0 & t <= t1]
+pr <- rbindlist(lapply(mm, `[[`, "price"), use.names = TRUE)[t >= t0 & t <= t1 & region == r, .(t, rrp)]
 grid <- data.table(t = seq(t0, min(t1, max(pr$t)), by = 300))
 res <- list()
 for (tch in c("wind", "solar")) {
