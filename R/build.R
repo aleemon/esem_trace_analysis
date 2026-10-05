@@ -15,7 +15,7 @@
 #   stored as A = sum CF*m*dt and B = sum CF*m*P'*dt, so any K gives K*A - B
 # Merchant (per unit): sum max(SCADA,0) * max(P,0) * dt  (floored at zero when the price is negative)
 
-REF_SUN <- as.numeric(as.POSIXct("2020-12-27 00:00", tz = "UTC"))   # a Sunday; NEM billing weeks run Sun-Sat
+REF_SUN <- as.numeric(as.POSIXct("2016-12-25 00:00", tz = "UTC"))   # a Sunday before any reporting week; NEM billing weeks run Sun-Sat (must match site/app.js)
 BLOCK   <- 16L
 H       <- DT_SEC / 3600
 CAP_X   <- 600; FLOOR_F <- 0

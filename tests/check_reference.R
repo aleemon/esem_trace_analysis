@@ -6,7 +6,7 @@ suppressPackageStartupMessages({ library(data.table); library(jsonlite) })
 source("R/wdb.R")
 a <- commandArgs(TRUE); y <- as.integer(a[1]); r <- a[2]; cache <- if (length(a) > 2) a[3] else "cache"
 OFF <- 36000; H <- 1 / 12; CAPX <- 600; FL <- 0
-REF <- as.numeric(as.POSIXct("2020-12-27", tz = "UTC"))
+REF <- as.numeric(as.POSIXct("2016-12-25", tz = "UTC"))
 meta <- fromJSON(file.path(cache, "out", "meta.json"), simplifyVector = FALSE)
 units <- rbindlist(lapply(meta$units, function(u) data.table(duid = u$id, region = u$region, tech = u$tech, gi = u$gi,
   reg_date = as.Date(u$reg_date %||% NA), first_op = as.Date(u$first_op %||% NA))))

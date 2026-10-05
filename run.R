@@ -2,6 +2,7 @@
 # Nightly build: register -> fetch months -> first generation dates -> rebuild changed years -> assemble site/data.
 # Environment:
 #   DATA_SOURCE  "aemo" (NEMWeb) or "synthetic" (generated demo data; default)
+#   START_YEAR   first reporting year (default 2018 for aemo); YEARS_BACK is used when START_YEAR is unset
 #   YEARS_BACK   reporting years, ending with the current year (default 5). History is fetched from one year
 #                earlier so first-generation dates (6-month basket rule) are known for the first reporting year.
 #   FORCE        "true" rebuilds every year
@@ -15,7 +16,9 @@ YEARS_BACK <- as.integer(env("YEARS_BACK", "5")); FORCE <- tolower(env("FORCE", 
 CACHE <- env("CACHE_DIR", "cache"); SITE <- env("SITE_DATA", "site/data")
 NEMC <- file.path(CACHE, "nem"); OUT <- file.path(CACHE, "out"); DER <- file.path(CACHE, "derived")
 today <- as.Date(format(Sys.time(), tz = "Australia/Brisbane"))
-years <- (as.integer(format(today, "%Y")) - YEARS_BACK + 1L):as.integer(format(today, "%Y"))
+START_YEAR <- env("START_YEAR", if (SOURCE == "aemo") "2018" else "")   # AEMO default: report from 2018
+y_now <- as.integer(format(today, "%Y"))
+years <- if (nzchar(START_YEAR)) as.integer(START_YEAR):y_now else (y_now - YEARS_BACK + 1L):y_now
 fetch_from <- as.Date(sprintf("%d-01-01", min(years) - 1L))
 months <- CJ(y = (min(years) - 1L):max(years), m = 1:12)[as.Date(sprintf("%d-%02d-01", y, m)) <= today - 1]
 mkey <- function(y, m) sprintf("%d%02d", y, m)

@@ -1,4 +1,4 @@
-# Reference PPA Monitor
+# ESEM Reference Trace Analysis
 
 Static dashboard for testing a regional reference PPA (as proposed for the ESEM) against NEM wind and solar farms.
 Each farm's 5-min output is shown against a regional reference trace, and contract settlement is calculated three ways
@@ -28,7 +28,7 @@ tests/check_reference.R   independent recomputation of baskets, traces, settleme
    workflow from the Actions tab. The first AEMO run downloads six years of MMSDM months (DISPATCHLOAD is about
    100 MB a month), so allow a couple of hours; nightly runs after that fetch new days and rebuild the current year.
 
-Optional repository variable: `YEARS_BACK` (reporting years, default 5). "Run workflow" has a **force** tick box.
+Optional repository variables: `START_YEAR` (first reporting year; default 2018 for `aemo`) and `YEARS_BACK` (used when `START_YEAR` is unset; default 5, which is what the synthetic demo uses). History is fetched from the year before the first reporting year. "Run workflow" has a **force** tick box.
 
 ## Data
 
@@ -58,6 +58,7 @@ the 1 January value.
 A basket unit with missing data in an interval is dropped from numerator and denominator for that interval only.
 
 **Settlement** per interval = trace CF × Q × (K − floating) × 5/60, summed by billing week (Sunday–Saturday, market time).
+Weekly statistics (SD, downside SD, P10, worst week) use complete weeks only: at least 90% of intervals with a price and farm SCADA. P10 is the 10th percentile of weekly net revenue (the low tail). Downside SD = √mean(min(x − mean, 0)²).
 Positive is paid to the generator.
 
 | Approach | Floating price | Quantity |

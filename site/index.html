@@ -25,54 +25,54 @@
   --navy:#3b8cbc; --navy-ink:#8cc4e6; --amber:#F5B01C; --amber-soft:rgba(245,176,28,.20); --green:#00D180;
   --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
   --pos:#3987e5; --neg:#e66767; --band:rgba(57,135,229,.22); --gap:rgba(217,89,38,.28); color-scheme:dark}
-body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 var(--f-ui);}
-.wrap{max-width:1280px;margin:0 auto;padding-inline:20px;padding-block:0 48px}
+body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.5 var(--f-ui);}
+.wrap{max-width:1920px;margin:0 auto;padding-inline:28px;padding-block:0 48px}
 header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--rule)}
-.bar-in{max-width:1280px;margin:0 auto;padding-inline:20px;padding-block:10px;display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
+.bar-in{max-width:1920px;margin:0 auto;padding-inline:28px;padding-block:10px;display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
 .brand{display:flex;align-items:baseline;gap:10px;margin-right:auto;min-width:0}
-.brand b{font-weight:700;font-size:17px;letter-spacing:-.01em;color:var(--navy-ink)}
-.brand span{font-size:12px;color:var(--ink-3)}
+.brand b{font-weight:700;font-size:20px;letter-spacing:-.01em;color:var(--navy-ink)}
+.brand span{font-size:13.5px;color:var(--ink-3)}
 .ctl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
-label.f{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2)}
-label.f>span{text-transform:uppercase;letter-spacing:.06em;font-size:10.5px;font-weight:600;color:var(--ink-3)}
-select,input[type=number],input[type=search]{font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:4px 8px}
-input[type=number]{width:80px;font-family:var(--f-num)}
+label.f{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink-2)}
+label.f>span{text-transform:uppercase;letter-spacing:.06em;font-size:12px;font-weight:600;color:var(--ink-3)}
+select,input[type=number],input[type=search]{font:inherit;font-size:14.5px;color:var(--ink);background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:4px 8px}
+input[type=number]{width:96px;font-family:var(--f-num)}
 .seg{display:inline-flex;border:1px solid var(--rule);border-radius:7px;overflow:hidden}
-.seg button{font:inherit;font-size:12.5px;border:0;background:transparent;color:var(--ink-2);padding:4px 10px;cursor:pointer}
+.seg button{font:inherit;font-size:14px;border:0;background:transparent;color:var(--ink-2);padding:4px 10px;cursor:pointer}
 .seg button+button{border-left:1px solid var(--rule)}
 .seg button[aria-pressed=true]{background:var(--navy);color:#fff}
 button:focus-visible,select:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
 nav.tabs{display:flex;gap:4px;margin-block:18px 14px;border-bottom:1px solid var(--rule);overflow-x:auto}
-nav.tabs button{font:inherit;font-weight:600;font-size:14px;background:none;border:0;border-bottom:2px solid transparent;color:var(--ink-3);padding:8px 12px;cursor:pointer;white-space:nowrap}
+nav.tabs button{font:inherit;font-weight:600;font-size:16.5px;background:none;border:0;border-bottom:2px solid transparent;color:var(--ink-3);padding:8px 12px;cursor:pointer;white-space:nowrap}
 nav.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--amber)}
-.panel{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:14px 16px;min-width:0}
-.panel h3{margin:0 0 2px;font-size:14px;font-weight:600;text-wrap:balance}
-.panel .sub{margin:0 0 10px;font-size:12px;color:var(--ink-3)}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px 20px;min-width:0}
+.panel h3{margin:0 0 4px;font-size:16.5px;font-weight:600;text-wrap:balance}
+.panel .sub{margin:0 0 12px;font-size:13.5px;color:var(--ink-3)}
 .grid{display:grid;gap:14px}
-.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,640px),1fr))}
 .toolbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-bottom:12px}
-.status{font-size:12px;color:var(--ink-3);font-family:var(--f-num)}
+.status{font-size:13px;color:var(--ink-3);font-family:var(--f-num)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule);border-radius:999px;padding:2px 4px 2px 8px;font-size:12px}
 .chip i{width:10px;height:10px;border-radius:2px;display:inline-block}
 .chip button{border:0;background:none;color:var(--ink-3);cursor:pointer;font-size:14px;line-height:1;padding:0 4px}
 .picker{position:relative}
 .picker ul{position:absolute;z-index:30;top:100%;left:0;margin:4px 0 0;padding:4px;list-style:none;background:var(--surface);border:1px solid var(--rule);border-radius:8px;max-height:260px;overflow:auto;min-width:220px;box-shadow:0 6px 20px rgba(0,0,0,.12)}
-.picker li{padding:4px 8px;border-radius:5px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;gap:12px}
+.picker li{padding:5px 9px;border-radius:5px;cursor:pointer;font-size:14.5px;display:flex;justify-content:space-between;gap:12px}
 .picker li:hover,.picker li.on{background:var(--rule-2)}
 .picker li small{color:var(--ink-3);font-family:var(--f-num)}
-.uplot{font-family:var(--f-ui)} .u-legend{font-size:12px;color:var(--ink-2)} .u-legend .u-value{font-family:var(--f-num)}
+.uplot{font-family:var(--f-ui)} .u-legend{font-size:13.5px;color:var(--ink-2)} .u-legend .u-value{font-family:var(--f-num)}
 .u-select{background:var(--amber-soft)!important}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
 .kpi{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:10px 14px}
-.kpi span{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
-.kpi b{display:block;font:500 20px/1.3 var(--f-num);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.kpi b.nm{font:600 15px/1.6 var(--f-ui)}
-.kpi small{color:var(--ink-3);font-size:11.5px}
+.kpi span{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.kpi b{display:block;font:500 24px/1.3 var(--f-num);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kpi b.nm{font:600 17px/1.6 var(--f-ui)}
+.kpi small{color:var(--ink-3);font-size:13px}
 .tblwrap{overflow:auto;max-height:520px;border:1px solid var(--rule);border-radius:8px}
-table{border-collapse:collapse;width:100%;font-size:12.5px}
-th,td{padding:5px 8px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--rule-2)}
-th{position:sticky;top:0;background:var(--surface);color:var(--ink-3);font-weight:600;font-size:11px;letter-spacing:.03em;cursor:pointer;user-select:none;border-bottom:1px solid var(--rule)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--rule-2)}
+th{position:sticky;top:0;background:var(--surface);color:var(--ink-3);font-weight:600;font-size:12.5px;letter-spacing:.03em;cursor:pointer;user-select:none;border-bottom:1px solid var(--rule)}
 th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
 td{font-family:var(--f-num);font-variant-numeric:tabular-nums}
 td:first-child{font-family:var(--f-ui);font-weight:500}
@@ -81,9 +81,9 @@ tbody tr{cursor:pointer} tbody tr:hover td{background:var(--rule-2)}
 .neg{color:var(--neg)} .posv{color:var(--pos)}
 svg text{font-family:var(--f-ui)} svg .num{font-family:var(--f-num)}
 .boxwrap{max-height:560px;overflow:auto}
-#tip{position:fixed;z-index:50;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:6px 9px;font-size:12px;box-shadow:0 6px 18px rgba(0,0,0,.15);max-width:280px}
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:7px 10px;font-size:13.5px;box-shadow:0 6px 18px rgba(0,0,0,.15);max-width:280px}
 #tip b{font-weight:600} #tip .num{font-family:var(--f-num)}
-.note{font-size:12px;color:var(--ink-3);margin-top:8px}
+.note{font-size:13.5px;color:var(--ink-3);margin-top:8px}
 .badge{font:500 10.5px var(--f-num);padding:1px 6px;border-radius:4px;background:var(--rule-2);color:var(--ink-2)}
 .err{color:var(--neg);font-size:13px}
 .loading{opacity:.55;transition:opacity .2s}
@@ -91,22 +91,22 @@ svg text{font-family:var(--f-ui)} svg .num{font-family:var(--f-num)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 .contract{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px;align-items:end}
-.contract label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink-2)}
-.contract label>span{text-transform:uppercase;letter-spacing:.06em;font-size:10.5px;font-weight:600;color:var(--ink-3)}
+.contract label{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--ink-2)}
+.contract label>span{text-transform:uppercase;letter-spacing:.06em;font-size:12px;font-weight:600;color:var(--ink-3)}
 .contract input{width:100%;box-sizing:border-box}
 .appr{display:grid;grid-template-columns:minmax(0,1.6fr) auto;gap:8px 12px;align-items:center;margin-top:12px}
-.appr .nm{font-size:13px} .appr .nm b{font-weight:600} .appr .nm small{display:block;color:var(--ink-3);font-size:11.5px}
+.appr .nm{font-size:14.5px} .appr .nm b{font-weight:600} .appr .nm small{display:block;color:var(--ink-3);font-size:13px}
 .tag{display:inline-block;font:600 10.5px var(--f-num);padding:1px 6px;border-radius:4px;margin-right:6px;color:#fff}
 .tag.a{background:var(--s1)} .tag.b{background:var(--s2)} .tag.c{background:var(--s7)} .tag.m{background:var(--ink-3)}
 tr.dflt td{background:var(--amber-soft)}
 td.l{text-align:left;font-family:var(--f-ui)}
 #cmp th{white-space:normal;vertical-align:bottom;line-height:1.25} #cmp th,#cmp td{padding:5px 6px}
-.unitbar{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:12.5px;color:var(--ink-2);margin:0 0 12px}
-.unitbar b{color:var(--ink);font-size:15px;font-weight:600}
+.unitbar{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;font-size:14px;color:var(--ink-2);margin:0 0 12px}
+.unitbar b{color:var(--ink);font-size:18px;font-weight:600}
 .yr{font:500 11px var(--f-num);padding:1px 6px;border-radius:4px;border:1px solid var(--rule);color:var(--ink-3)}
 .yr.in{background:var(--navy);border-color:var(--navy);color:#fff}
 .layout{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
-@media (min-width:1100px){.layout.side{grid-template-columns:330px minmax(0,1fr)}}
+@media (min-width:1100px){.layout.side{grid-template-columns:380px minmax(0,1fr)}}
 .stack{display:grid;gap:14px;min-width:0;align-content:start}
 </style>
 <link rel="stylesheet" href="vendor/uPlot.min.css">
@@ -124,7 +124,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
 <div class="wrap">
   <nav class="tabs" role="tablist">
     <button role="tab" id="t-fa" aria-selected="true" data-tab="farm">Reference Trace Analysis</button>
-    <button role="tab" id="t-st" aria-selected="false" data-tab="settle">Settlement Anslysis</button>
+    <button role="tab" id="t-st" aria-selected="false" data-tab="settle">Settlement Analysis</button>
     <button role="tab" id="t-fl" aria-selected="false" data-tab="fleet">Fleet Comparison</button>
   </nav>
   <div class="unitbar" id="unitbar"></div>
@@ -138,15 +138,18 @@ td.l{text-align:left;font-family:var(--f-ui)}
       <span class="status" id="exstatus"></span>
     </div>
     <div class="grid">
-      <div class="panel"><h3 id="p1t">Regional price</h3><p class="sub">Regional Reference Price ($/MWh) · mean line, min–max band per pixel · drag to zoom, double-click to reset</p><div id="p1"></div></div>
+      <div class="panel"><h3 id="p1t">Regional price</h3><p class="sub">$/MWh settlement price · mean line, min–max band per pixel · drag to zoom, double-click to reset</p><div id="p1"></div></div>
       <div class="panel"><h3 id="p2t">Farm output vs regional reference trace</h3><p class="sub" id="p2s"></p><div id="p2"></div></div>
+      <div class="panel"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 id="p3t" style="margin:0">Average output vs reference trace</h3>
+        <div class="seg" role="group" aria-label="Averaging period"><button id="av-w" aria-pressed="false">Weekly</button><button id="av-m" aria-pressed="true">Monthly</button></div></div>
+        <p class="sub" id="p3s"></p><div id="p3"></div></div>
     </div>
   </section>
 
   <section id="settle" role="tabpanel" hidden>
     <div class="layout side">
       <div class="panel">
-        <h3>Contract</h3><p class="sub">Settlement = trace CF × quantity × (fixed − floating), per 5-min interval. Settled by AEMO week (Sun–Sat). Positive = paid to the generator.</p>
+        <h3>Contract</h3><p class="sub">Settlement = trace CF × quantity × (fixed − floating), per 5-min interval, summed by week (Sun–Sat). Positive = paid to the generator.</p>
         <div class="contract">
           <label for="k"><span>Fixed price $/MWh</span><input type="number" id="k" value="75" step="1"></label>
           <label for="q"><span>Contract quantity MW</span><input type="number" id="q" value="100" step="1" min="0"></label>
@@ -156,23 +159,23 @@ td.l{text-align:left;font-family:var(--f-ui)}
         <div class="appr">
           <div class="nm"><span class="tag a">A</span><b>Exposed</b><small>Floating = spot price</small></div>
           <div class="seg" role="group" aria-label="Trace for A"><button data-ap="a" data-tr="so" aria-pressed="true">Sent-out</button><button data-ap="a" data-tr="ug" aria-pressed="false">UIGF</button></div>
-          <div class="nm"><span class="tag b">B</span><b>Cap + floor</b><small id="bdesc">Floating price limited to $0 – $600</small></div>
+          <div class="nm"><span class="tag b">B</span><b>Cap + floor</b><small id="bdesc">Floating limited to $0 – $600</small></div>
           <div class="seg" role="group" aria-label="Trace for B"><button data-ap="b" data-tr="so" aria-pressed="false">Sent-out</button><button data-ap="b" data-tr="ug" aria-pressed="true">UIGF</button></div>
-          <div class="nm"><span class="tag c">C</span><b>Cap + volume knockout</b><small id="cdesc">Floating price capped at $600; quantity 0 when price &lt; 0</small></div>
+          <div class="nm"><span class="tag c">C</span><b>Cap + volume knockout</b><small id="cdesc">Floating capped at $600; quantity 0 when price &lt; 0</small></div>
           <div class="seg" role="group" aria-label="Trace for C"><button data-ap="c" data-tr="so" aria-pressed="true">Sent-out</button><button data-ap="c" data-tr="ug" aria-pressed="false">UIGF</button></div>
         </div>
-        <p class="note">NB: The UIGF trace differs from sent-out only in negative-price intervals, so approach C doesn't change when those intervals are knocked out.</p>
-        <p class="note">NB: Merchant revenue = farm sent-out × spot, floored at $0 when the price is negative.</p>
+        <p class="note">NB: The UIGF trace differs from sent-out only in negative-price intervals, so approach C is unchanged when those intervals are knocked out.</p>
+        <p class="note">NB: Merchant = farm sent-out × spot, floored at $0 when the price is negative.</p>
       </div>
       <div class="stack">
         <div class="kpis" id="stkpi" style="margin:0"></div>
-        <div class="panel"><h3>Comaprison of revenues against reference trace approaches</h3><p class="sub" id="cmps"></p><div class="tblwrap" id="cmp" style="max-height:none"></div></div>
+        <div class="panel"><h3>All approaches against both reference traces</h3><p class="sub" id="cmps"></p><div class="tblwrap" id="cmp" style="max-height:none"></div></div>
       </div>
     </div>
     <div class="grid g2" style="margin-top:14px">
       <div class="panel"><h3>Cumulative net revenue</h3><p class="sub">Merchant plus contract settlement, $M · selected trace per approach</p><div id="st1"></div></div>
-      <div class="panel"><h3>Change in settlement from merchant-only</h3><p class="sub" id="st2s"></p><div id="st2"></div></div>
-      <div class="panel" style="grid-column:1/-1"><h3>Weekly net revenue</h3><p class="sub">$k per week · merchant vs each approach</p><div id="st3"></div></div>
+      <div class="panel"><h3>What moves settlement between approaches</h3><p class="sub" id="st2s"></p><div id="st2"></div></div>
+      <div class="panel" style="grid-column:1/-1"><h3>Weekly net revenue</h3><p class="sub">$k per week · merchant vs each approach · complete weeks only (the same weeks as the table's statistics); partial weeks at the period edges are hidden here but included in totals</p><div id="st3"></div></div>
     </div>
   </section>
 
@@ -186,7 +189,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
     </div>
     <div class="grid g2">
       <div class="panel"><h3>Net revenue by approach, across assets</h3><p class="sub" id="fl1s"></p><div id="fl1"></div></div>
-      <div class="panel"><h3>Weekly revenue volatility vs merchant</h3><p class="sub">SD(weekly net) ÷ SD(weekly merchant) − 1, across assets · positive = the contract adds volatility</p><div id="fl2"></div></div>
+      <div class="panel"><h3>Weekly downside volatility vs merchant</h3><p class="sub">Downside SD(weekly net) ÷ downside SD(weekly merchant) − 1, across assets · downside SD = √mean(min(x − mean, 0)²) over complete weeks · positive = the contract adds downside volatility</p><div id="fl2"></div></div>
     </div>
     <div class="panel" style="margin-top:14px"><h3>Assets</h3><p class="sub">Per-MW figures at the $600 cap and $0 floor · click a row to open the farm · weeks with more than 10% missing data are dropped</p><div class="tblwrap" id="fl3"></div></div>
   </section>
