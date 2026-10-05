@@ -9,29 +9,35 @@
 <style>
 /* Layout: sticky bar (asset + period) over three tabbed workspaces; inputs left of results; charts full-width; tables scroll in their own frame */
 :root{
-  --bg:#f4f7f8; --surface:#ffffff; --ink:#0c1a22; --ink-2:#465761; --ink-3:#74848d; --rule:#dbe3e7; --rule-2:#eef2f4;
-  --navy:#0A405E; --navy-ink:#0A405E; --amber:#F5B01C; --amber-soft:rgba(245,176,28,.18); --green:#00b06c;
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
-  --pos:#2a78d6; --neg:#e34948; --band:rgba(42,120,214,.16); --gap:rgba(235,104,52,.22);
+  /* Atmos brand: navy #0A405E, amber #F5B01C, green #00D180, near-black #0C0C0A. Chart series are brand-derived
+     steps validated for colour-vision deficiency and contrast (light: blue, amber, violet, green). */
+  --bg:#f3f6f8; --surface:#ffffff; --ink:#0C0C0A; --ink-2:#3f4f59; --ink-3:#6b7c86; --rule:#d7e1e7; --rule-2:#edf2f5;
+  --navy:#0A405E; --navy-ink:#0A405E; --amber:#F5B01C; --amber-soft:rgba(245,176,28,.20); --green:#00D180;
+  --hdr:#0A405E; --hdr-ink:#ffffff; --hdr-ink-2:#b8cfdd;
+  --s1:#1D72A8; --s2:#D99A00; --s3:#009E68; --s4:#D99A00; --s5:#7B5BC4; --s6:#009E68; --s7:#7B5BC4; --s8:#d03b3b;
+  --pos:#1D72A8; --neg:#d03b3b; --band:rgba(29,114,168,.16); --gap:rgba(217,154,0,.24);
   --f-ui:"Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif; --f-num:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0a1318; --surface:#101c23; --ink:#e9f0f3; --ink-2:#a7b6be; --ink-3:#7a8b94; --rule:#22333c; --rule-2:#17252d;
-  --navy:#3b8cbc; --navy-ink:#8cc4e6; --amber:#F5B01C; --amber-soft:rgba(245,176,28,.20); --green:#00D180;
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
-  --pos:#3987e5; --neg:#e66767; --band:rgba(57,135,229,.22); --gap:rgba(217,89,38,.28); color-scheme:dark}}
+  --bg:#081720; --surface:#0d2230; --ink:#eef3f6; --ink-2:#aebfca; --ink-3:#7f939f; --rule:#1d3646; --rule-2:#132a38;
+  --navy:#2f7fb0; --navy-ink:#8cc4e6; --amber:#F5B01C; --amber-soft:rgba(245,176,28,.20); --green:#00D180;
+  --hdr:#06293d; --hdr-ink:#ffffff; --hdr-ink-2:#9fbccc;
+  --s1:#3388CC; --s2:#BF8800; --s3:#00A36B; --s4:#BF8800; --s5:#8B79E3; --s6:#00A36B; --s7:#8B79E3; --s8:#e06666;
+  --pos:#3388CC; --neg:#e06666; --band:rgba(51,136,204,.24); --gap:rgba(191,136,0,.30); color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0a1318; --surface:#101c23; --ink:#e9f0f3; --ink-2:#a7b6be; --ink-3:#7a8b94; --rule:#22333c; --rule-2:#17252d;
-  --navy:#3b8cbc; --navy-ink:#8cc4e6; --amber:#F5B01C; --amber-soft:rgba(245,176,28,.20); --green:#00D180;
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
-  --pos:#3987e5; --neg:#e66767; --band:rgba(57,135,229,.22); --gap:rgba(217,89,38,.28); color-scheme:dark}
+  --bg:#081720; --surface:#0d2230; --ink:#eef3f6; --ink-2:#aebfca; --ink-3:#7f939f; --rule:#1d3646; --rule-2:#132a38;
+  --navy:#2f7fb0; --navy-ink:#8cc4e6; --amber:#F5B01C; --amber-soft:rgba(245,176,28,.20); --green:#00D180;
+  --hdr:#06293d; --hdr-ink:#ffffff; --hdr-ink-2:#9fbccc;
+  --s1:#3388CC; --s2:#BF8800; --s3:#00A36B; --s4:#BF8800; --s5:#8B79E3; --s6:#00A36B; --s7:#8B79E3; --s8:#e06666;
+  --pos:#3388CC; --neg:#e06666; --band:rgba(51,136,204,.24); --gap:rgba(191,136,0,.30); color-scheme:dark}
 body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.5 var(--f-ui);}
 .wrap{max-width:1920px;margin:0 auto;padding-inline:28px;padding-block:0 48px}
-header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--rule)}
+header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--hdr);border-bottom:3px solid var(--amber)}
+header.bar label.f>span{color:var(--hdr-ink-2)}
 .bar-in{max-width:1920px;margin:0 auto;padding-inline:28px;padding-block:10px;display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
 .brand{display:flex;align-items:baseline;gap:10px;margin-right:auto;min-width:0}
-.brand b{font-weight:700;font-size:20px;letter-spacing:-.01em;color:var(--navy-ink)}
-.brand span{font-size:13.5px;color:var(--ink-3)}
+.brand b{font-weight:700;font-size:20px;letter-spacing:-.01em;color:var(--hdr-ink)}
+.brand span{font-size:13.5px;color:var(--hdr-ink-2)}
 .ctl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
 label.f{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink-2)}
 label.f>span{text-transform:uppercase;letter-spacing:.06em;font-size:12px;font-weight:600;color:var(--ink-3)}
@@ -97,7 +103,7 @@ svg text{font-family:var(--f-ui)} svg .num{font-family:var(--f-num)}
 .appr{display:grid;grid-template-columns:minmax(0,1.6fr) auto;gap:8px 12px;align-items:center;margin-top:12px}
 .appr .nm{font-size:14.5px} .appr .nm b{font-weight:600} .appr .nm small{display:block;color:var(--ink-3);font-size:13px}
 .tag{display:inline-block;font:600 10.5px var(--f-num);padding:1px 6px;border-radius:4px;margin-right:6px;color:#fff}
-.tag.a{background:var(--s1)} .tag.b{background:var(--s2)} .tag.c{background:var(--s7)} .tag.m{background:var(--ink-3)}
+.tag.a{background:var(--s1)} .tag.b{background:var(--s2);color:#0C0C0A} .tag.c{background:var(--s7)} .tag.m{background:var(--ink-3)}
 tr.dflt td{background:var(--amber-soft)}
 td.l{text-align:left;font-family:var(--f-ui)}
 #cmp th{white-space:normal;vertical-align:bottom;line-height:1.25} #cmp th,#cmp td{padding:5px 6px}
@@ -108,6 +114,10 @@ td.l{text-align:left;font-family:var(--f-ui)}
 .layout{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
 @media (min-width:1100px){.layout.side{grid-template-columns:380px minmax(0,1fr)}}
 .stack{display:grid;gap:14px;min-width:0;align-content:start}
+.dl{float:right;display:inline-flex;gap:4px;margin:-4px 0 4px 12px}
+.toolbar .dl{float:none;margin:0}
+.dl button{font:600 11.5px var(--f-num);letter-spacing:.04em;color:var(--ink-3);background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:3px 8px;cursor:pointer}
+.dl button:hover{color:var(--ink);border-color:var(--ink-3)}
 </style>
 <link rel="stylesheet" href="vendor/uPlot.min.css">
 </head>
@@ -159,7 +169,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
         <div class="appr">
           <div class="nm"><span class="tag a">A</span><b>Exposed</b><small>Floating = spot price</small></div>
           <div class="seg" role="group" aria-label="Trace for A"><button data-ap="a" data-tr="so" aria-pressed="true">Sent-out</button><button data-ap="a" data-tr="ug" aria-pressed="false">UIGF</button></div>
-          <div class="nm"><span class="tag b">B</span><b>Cap + floor</b><small id="bdesc">Floating limited to $0 – $600</small></div>
+          <div class="nm"><span class="tag b">B</span><b>Cap + floor</b><small id="bdesc">Floating clamped to $0 – $600</small></div>
           <div class="seg" role="group" aria-label="Trace for B"><button data-ap="b" data-tr="so" aria-pressed="false">Sent-out</button><button data-ap="b" data-tr="ug" aria-pressed="true">UIGF</button></div>
           <div class="nm"><span class="tag c">C</span><b>Cap + volume knockout</b><small id="cdesc">Floating capped at $600; quantity 0 when price &lt; 0</small></div>
           <div class="seg" role="group" aria-label="Trace for C"><button data-ap="c" data-tr="so" aria-pressed="true">Sent-out</button><button data-ap="c" data-tr="ug" aria-pressed="false">UIGF</button></div>
@@ -175,6 +185,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
     <div class="grid g2" style="margin-top:14px">
       <div class="panel"><h3>Cumulative net revenue</h3><p class="sub">Merchant plus contract settlement, $M · selected trace per approach</p><div id="st1"></div></div>
       <div class="panel"><h3>What moves settlement between approaches</h3><p class="sub" id="st2s"></p><div id="st2"></div></div>
+      <div class="panel" style="grid-column:1/-1"><h3>Distribution of weekly net revenue</h3><p class="sub" id="st4s"></p><div id="st4"></div></div>
       <div class="panel" style="grid-column:1/-1"><h3>Weekly net revenue</h3><p class="sub">$k per week · merchant vs each approach · complete weeks only (the same weeks as the table's statistics); partial weeks at the period edges are hidden here but included in totals</p><div id="st3"></div></div>
     </div>
   </section>

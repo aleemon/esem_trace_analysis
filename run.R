@@ -6,6 +6,8 @@
 #   YEARS_BACK   reporting years, ending with the current year (default 5). History is fetched from one year
 #                earlier so first-generation dates (6-month basket rule) are known for the first reporting year.
 #   FORCE        "true" rebuilds every year
+#   FETCH_MINUTES stop starting new month downloads after this many minutes (default 210), so a long backfill ends
+#                cleanly inside the job limit, saves what it has, and the next run carries on
 #   CACHE_DIR    default "cache"; SITE_DATA default "site/data"
 suppressPackageStartupMessages({ library(data.table); library(jsonlite) })
 for (f in c("R/wdb.R", "R/fetch_nem.R", "R/registry.R", "R/build.R", "R/synthetic.R")) source(f)
@@ -41,7 +43,22 @@ if (SOURCE == "synthetic") {
   }
   if (!length(regm)) stop("no MMSDM registration tables could be fetched")
   reg <- build_registry(regm)
-  for (i in seq_len(nrow(months))) fetch_nem_month(months$y[i], months$m[i], reg$units$duid, NEMC, today)
+  budget <- Sys.time() + 60 * as.numeric(env("FETCH_MINUTES", "210"))
+  for (i in seq_len(nrow(months))) {
+    k <- mkey(months$y[i], months$m[i]); f <- file.path(NEMC, paste0(k, ".rds"))
+    if (Sys.time() > budget && !file.exists(f)) { note_fetch(months$y[i], months$m[i], "DEFERRED", "time budget reached; next run continues"); next }
+    fetch_nem_month(months$y[i], months$m[i], reg$units$duid, NEMC, today)
+  }
+  # month-by-month fetch report: printed to the log and saved for the data release
+  fr <- rbindlist(lapply(sort(ls(FETCH_LOG)), function(k) c(month = k, FETCH_LOG[[k]])))
+  if (nrow(fr)) {
+    log_msg("fetch report: %s", paste(sprintf("%s %d", names(table(fr$src)), as.integer(table(fr$src))), collapse = ", "))
+    bad <- fr[src %in% c("FAILED", "DEFERRED")]
+    if (nrow(bad)) for (j in seq_len(nrow(bad))) log_msg("  %s %s %s", bad$month[j], bad$src[j], bad$msg[j])
+    dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
+    writeLines(c("| month | source | note |", "| --- | --- | --- |", sprintf("| %s | %s | %s |", fr$month, fr$src, gsub("|", "/", fr$msg, fixed = TRUE))),
+               file.path(OUT, "fetch_report.md"))
+  }
 }
 units <- copy(reg$units); caph <- reg$caph
 saveRDS(list(units = reg$units, caph = reg$caph, source = SOURCE), file.path(CACHE, "register.rds"))   # for tests/benchmark.R

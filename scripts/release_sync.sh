@@ -52,7 +52,7 @@ Rscript --vanilla -e '
     x <- readRDS(f); if (isTRUE(x$complete)) out <- c(out, paste(f, paste0("nem_", basename(f)), sep = "\t"))
   }
   for (f in Sys.glob(file.path(cache, "registry", "*.rds"))) out <- c(out, paste(f, paste0("registry_", basename(f)), sep = "\t"))
-  f <- file.path(cache, "out", "benchmark.md"); if (file.exists(f)) out <- c(out, paste(f, "benchmark.md", sep = "\t"))
+  for (b in c("benchmark.md", "fetch_report.md")) { f <- file.path(cache, "out", b); if (file.exists(f)) out <- c(out, paste(f, b, sep = "\t")) }
   writeLines(out)' > "$tmp/local.tsv"
 : > "$tmp/new_manifest.tsv"; up=0
 while IFS=$'\t' read -r path name; do
