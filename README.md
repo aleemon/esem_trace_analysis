@@ -30,6 +30,11 @@ tests/check_reference.R   independent recomputation of baskets, traces, settleme
 
 Optional repository variables: `START_YEAR` (first reporting year; default 2018 for `aemo`) and `YEARS_BACK` (used when `START_YEAR` is unset; default 5, which is what the synthetic demo uses). History is fetched from the year before the first reporting year. "Run workflow" has a **force** tick box.
 
+Each run stops starting new month downloads after `FETCH_MINUTES` (default 210) so a long backfill finishes inside the
+job limit and saves its progress; the next run carries on. The log ends with a fetch report (`fetch report: cached …,
+mmsdm …, FAILED …`) listing any month that could not be fetched and why, and the same table is saved to the data
+release as `fetch_report.md`.
+
 ## Data
 
 | Item | Source |
