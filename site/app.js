@@ -6,7 +6,7 @@ const DATA = "data/";
 // Set true only for hosts that refuse binary files (e.g. claude.ai artifacts); GitHub Pages serves .bin as-is.
 const B64 = false;
 const H = 300 / 3600;
-const REF_SUN = Date.UTC(2020, 11, 27) / 1000, NEM_OFF = 36000, WEEK = 604800;
+const REF_SUN = Date.UTC(2016, 11, 25) / 1000, NEM_OFF = 36000, WEEK = 604800;
 const fmt = (v, d = 0) => (v == null || !isFinite(v)) ? "–" : v.toLocaleString("en-AU", { minimumFractionDigits: d, maximumFractionDigits: d });
 const money = (v, d = 1) => (v == null || !isFinite(v)) ? "–" : (v < 0 ? "−$" : "$") + fmt(Math.abs(v), d);
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -25,6 +25,7 @@ function showTip(html, ev) {
 }
 const hideTip = () => { tip.hidden = true; };
 const quant = (s, q) => { if (!s.length) return NaN; const p = (s.length - 1) * q, i = Math.floor(p), f = p - i; return i + 1 < s.length ? s[i] * (1 - f) + s[i + 1] * f : s[i]; };
+const dsd = a => { if (a.length < 2) return NaN; const m = a.reduce((x, y) => x + y, 0) / a.length; return Math.sqrt(a.reduce((x, y) => x + Math.min(0, y - m) ** 2, 0) / a.length); };   // downside semi-deviation about the mean
 const sd = a => { if (a.length < 2) return NaN; const m = a.reduce((x, y) => x + y, 0) / a.length; return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / (a.length - 1)); };
 const svgEl = (w, h, inner, label) => `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="${label}" style="display:block;max-width:100%">${inner}</svg>`;
 function niceTicks(lo, hi, n = 5) {
@@ -64,7 +65,7 @@ function decodeSeries(file, s, base) {
 const series = (f, id) => f.header.series.find(s => s.id === id);
 
 // ---------- state ----------
-const S = { tab: "farm", unit: null, y0: 0, y1: 0, units: "cf", showug: false,
+const S = { tab: "farm", unit: null, y0: 0, y1: 0, units: "cf", showug: false, avg: "m",
   k: 75, q: 100, cap: 600, floor: 0, tr: { a: "so", b: "ug", c: "so" },
   ftech: "wind", freg: "", fk: 75, fr: 100, fpair: "dflt", fsort: { k: "net_b", d: -1 } };
 let META, SETTLE, UNIT = new Map();
@@ -113,6 +114,8 @@ function wire() {
   $("u-cf").onclick = () => { S.units = "cf"; setPressed("u-cf", "u-mw", true); drawPlots(); };
   $("u-mw").onclick = () => { S.units = "mw"; setPressed("u-cf", "u-mw", false); drawPlots(); };
   $("showug").onchange = e => { S.showug = e.target.checked; drawPlots(); };
+  $("av-w").onclick = () => { S.avg = "w"; setPressed("av-w", "av-m", true); drawAverages(); };
+  $("av-m").onclick = () => { S.avg = "m"; setPressed("av-w", "av-m", false); drawAverages(); };
   $("paxis").onchange = () => drawPlots();
   $("reset").onclick = () => resetZoom();
   document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => {
@@ -222,7 +225,7 @@ function plotOpts(series, h, extra = {}) {
     width: plotWidth(), height: h, tzDate: ts => uPlot.tzDate(new Date(ts * 1e3), TZ),
     cursor: { sync: { key: "ex" }, drag: { x: true, y: false }, bind: { dblclick: () => () => { resetZoom(); return null; } } },
     scales: { x: { time: true } }, legend: { live: true },
-    axes: [{ stroke: ax, grid: { stroke: grid, width: 1 }, ticks: { stroke: grid }, values: xvals }, { stroke: ax, grid: { stroke: grid, width: 1 }, ticks: { stroke: grid }, size: 60 }],
+    axes: [{ stroke: ax, font: '13px "IBM Plex Mono", monospace', grid: { stroke: grid, width: 1 }, ticks: { stroke: grid }, values: xvals, size: 44 }, { stroke: ax, font: '13px "IBM Plex Mono", monospace', grid: { stroke: grid, width: 1 }, ticks: { stroke: grid }, size: 72 }],
     series: [{ label: "Interval ending", value: (u, ts) => ts == null ? "–" : fF.format(new Date(ts * 1e3)) }].concat(series),
     hooks: { setScale: [(u, key) => { if (key === "x") onZoom(u); }] }
   }, extra);
@@ -252,15 +255,51 @@ function drawPlots(keep) {
     { label: "Price (mean)", stroke: css("--s1"), width: 1.25, value: (x, v) => pf(v) },
     { label: "max", stroke: "transparent", width: 0, points: { show: false }, value: (x, v) => pf(v) },
     { label: "min", stroke: "transparent", width: 0, points: { show: false }, value: (x, v) => pf(v) }
-  ], 210, Object.assign({ bands: [{ series: [2, 3], fill: css("--band") }] }, prange ? { scales: { x: { time: true }, y: { range: prange } } } : {})), d.d1, $("p1")));
+  ], 300, Object.assign({ bands: [{ series: [2, 3], fill: css("--band") }] }, prange ? { scales: { x: { time: true }, y: { range: prange } } } : {})), d.d1, $("p1")));
   const vf = v => v == null ? "–" : cf ? fmt(v, 3) : fmt(v, 1) + " MW";
   plots.push(new uPlot(plotOpts([
     { label: `${u.name} sent-out`, stroke: css("--s3"), width: 1.5, value: (x, v) => vf(v) },
     { label: "Reference, sent-out", stroke: css("--s1"), width: 1.5, value: (x, v) => vf(v) },
     { label: "Reference, UIGF on negative", stroke: css("--s2"), width: 1.25, dash: [5, 4], value: (x, v) => vf(v) },
     { label: `${u.name} UIGF`, stroke: css("--ink-3"), width: 1, value: (x, v) => vf(v), show: S.showug }
-  ], 280, cf ? { scales: { x: { time: true }, y: { range: [0, 1.05] } } } : {}), d.d2, $("p2")));
+  ], 420, cf ? { scales: { x: { time: true }, y: { range: [0, 1.05] } } } : {}), d.d2, $("p2")));
   if (keep && keep.min != null && keep.min >= E.x0 - 1 && keep.max <= E.x1 + 1 && (keep.max - keep.min) < (E.x1 - E.x0) * 0.999) refreshLod(keep.min, keep.max);
+  drawAverages();
+}
+// period averages: farm CF vs both reference traces, over intervals where the farm and the trace both have data
+const fMonth = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit" });
+function drawAverages() {
+  const E = EX; if (!E) return;
+  const u = E.u, cf = S.units === "cf", k = cf ? 1 : u.cap, byWeek = S.avg === "w";
+  const groups = new Map();
+  let curKey = null, curG = null, monthEnd = -Infinity;
+  for (let i = 0; i < E.N; i++) {
+    const t = E.T0 + i * E.dt;
+    let key;
+    if (byWeek) key = SETTLE.weeks[wkOf(t)] || "";
+    else { if (t > monthEnd || curKey === null) { const d = fMonth.format(new Date((t - 300) * 1e3)); key = d + "-01"; } else key = curKey; }
+    if (key !== curKey) {
+      curKey = key; curG = groups.get(key);
+      if (!curG) { curG = { f: 0, so: 0, ug: 0, n: 0 }; groups.set(key, curG); }
+      if (!byWeek) { const [yy, mm] = key.split("-").map(Number); monthEnd = Date.UTC(yy, mm, 1) / 1000 - NEM_OFF; }
+    }
+    const g = E.so[i], a = E.tso[i], b = E.tug[i];
+    if (g === g && a === a && b === b) { curG.f += Math.max(g, 0) / u.cap; curG.so += a; curG.ug += b; curG.n++; }
+  }
+  const keys = [...groups.keys()].filter(x => x && groups.get(x).n > 0).sort();
+  const val = f => keys.map(x => { const g = groups.get(x); return g.n >= (byWeek ? 0.5 * 2016 : 0.5 * 8640) ? g[f] / g.n * k : null; });
+  const farm = val("f"), so = val("so"), ug = val("ug");
+  let ef = 0, es = 0; farm.forEach((v, i) => { if (v != null) { ef += v; es += so[i]; } });
+  $("p3t").textContent = `${byWeek ? "Weekly" : "Monthly"} average output vs reference trace`;
+  $("p3s").textContent = `${cf ? "Mean capacity factor" : "Mean MW (traces scaled to " + fmt(u.cap, 1) + " MW)"} per ${byWeek ? "billing week (Sun–Sat)" : "calendar month"}, over intervals where the farm and both traces have data · farm ÷ reference (sent-out) over the period: ${fmt(es ? ef / es * 100 : NaN, 1)}% · periods with less than half their intervals are left out`;
+  const W = Math.max(320, $("p3").clientWidth || 1200);
+  const yf = v => v == null ? "–" : cf ? fmt(v * 100, 1) + "%" : fmt(v, 1) + " MW";
+  lineChart($("p3"), { xs: keys, series: [
+      { name: u.name.length > 16 ? u.name.slice(0, 15) + "…" : u.name, color: css("--s3"), vals: farm, width: 2.25 },
+      { name: "Ref, sent-out", color: css("--s1"), vals: so, width: 2 },
+      { name: "Ref, UIGF on neg", color: css("--s2"), vals: ug, width: 1.75, dash: "5 4" }],
+    yfmt: yf, w: W, h: 340, title: "Average output vs reference trace",
+    xlab: i => byWeek ? `Week from ${keys[i]}` : `${MONTHS[+keys[i].slice(5, 7) - 1]} ${keys[i].slice(0, 4)}` });
 }
 function resetZoom() { if (EX) refreshLod(EX.x0, EX.x1); }
 function onZoom(u) { if (syncing) return; const { min, max } = u.scales.x; refreshLod(min, max); }
@@ -304,20 +343,20 @@ function settle(E, p) {
 }
 const sum = a => a.reduce((x, y) => x + y, 0);
 function lineChart(el, { xs, series, yfmt, w = 600, h = 240, title, xlab }) {
-  const L = 58, Rr = 112, T = 10, B = 26, ph = h - T - B;
+  const L = 76, Rr = 136, T = 12, B = 30, ph = h - T - B;
   series.forEach(s => { s.vals = Array.from(s.vals); });
   const all = series.flatMap(s => s.vals).filter(v => v != null && isFinite(v));
   let lo = Math.min(0, ...all), hi = Math.max(...all); const pad = (hi - lo) * 0.06 || 1; hi += pad; if (lo < 0) lo -= pad;
   const ticks = niceTicks(lo, hi, 5); lo = Math.min(lo, ticks[0]); hi = Math.max(hi, ticks.at(-1));
   const n = xs.length, X = i => L + (n <= 1 ? 0 : i * (w - L - Rr) / (n - 1)), Y = v => T + ph - (v - lo) / (hi - lo) * ph;
   let g = "";
-  ticks.forEach(t => g += `<line x1="${L}" x2="${w - Rr}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--rule-2)"/><text x="${L - 8}" y="${Y(t) + 4}" text-anchor="end" font-size="11" class="num" fill="var(--ink-3)">${yfmt(t)}</text>`);
+  ticks.forEach(t => g += `<line x1="${L}" x2="${w - Rr}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--rule-2)"/><text x="${L - 8}" y="${Y(t) + 4}" text-anchor="end" font-size="12.5" class="num" fill="var(--ink-3)">${yfmt(t)}</text>`);
   if (lo < 0) g += `<line x1="${L}" x2="${w - Rr}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--ink-3)"/>`;
   // label each year at its first week that starts in January, at least 36 px after the previous label
   let lastX = -1e9, lastY = "";
   const mid = d => new Date(Date.parse(d) + 3 * 864e5).toISOString().slice(0, 10);   // a week belongs to the year of its Wednesday
-  xs.forEach((d0, i) => { const d = mid(d0), y = d.slice(0, 4); if (y !== lastY && (d.slice(5, 7) === "01" || i === 0)) { lastY = y; if (X(i) - lastX >= 36) { g += `<text x="${X(i)}" y="${h - 8}" font-size="11" fill="var(--ink-3)">${y}</text><line x1="${X(i)}" x2="${X(i)}" y1="${T + ph}" y2="${T + ph + 4}" stroke="var(--rule)"/>`; lastX = X(i); } } });
-  if (n > 0 && n <= 60) { const mi = []; xs.forEach((d, i) => { if (mid(d).slice(8, 10) <= "07" && i > 0) mi.push(i); }); mi.forEach(i => { if (X(i) - lastX >= 30) { g += `<text x="${X(i)}" y="${h - 8}" font-size="11" fill="var(--ink-3)">${MONTHS[+mid(xs[i]).slice(5, 7) - 1]}</text>`; lastX = X(i); } }); }
+  xs.forEach((d0, i) => { const d = mid(d0), y = d.slice(0, 4); if (y !== lastY && (d.slice(5, 7) === "01" || i === 0)) { lastY = y; if (X(i) - lastX >= 36) { g += `<text x="${X(i)}" y="${h - 8}" font-size="12.5" fill="var(--ink-3)">${y}</text><line x1="${X(i)}" x2="${X(i)}" y1="${T + ph}" y2="${T + ph + 4}" stroke="var(--rule)"/>`; lastX = X(i); } } });
+  if (n > 0 && n <= 60) { const mi = []; xs.forEach((d, i) => { if (mid(d).slice(8, 10) <= "07" && i > 0) mi.push(i); }); mi.forEach(i => { if (X(i) - lastX >= 30) { g += `<text x="${X(i)}" y="${h - 8}" font-size="12.5" fill="var(--ink-3)">${MONTHS[+mid(xs[i]).slice(5, 7) - 1]}</text>`; lastX = X(i); } }); }
   const ends = [];
   series.forEach(s => {
     let dd = "", pen = false; s.vals.forEach((v, i) => { if (v == null || !isFinite(v)) { pen = false; return; } dd += (pen ? "L" : "M") + X(i).toFixed(1) + "," + Y(v).toFixed(1); pen = true; });
@@ -325,8 +364,8 @@ function lineChart(el, { xs, series, yfmt, w = 600, h = 240, title, xlab }) {
     let li = s.vals.length - 1; while (li > 0 && (s.vals[li] == null || !isFinite(s.vals[li]))) li--;
     ends.push({ y: Y(s.vals[li]), name: s.name, color: s.color });
   });
-  ends.sort((a, b) => a.y - b.y); for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 13) ends[i].y = ends[i - 1].y + 13;
-  ends.forEach(e => g += `<circle cx="${w - Rr + 8}" cy="${e.y - 4}" r="3.5" fill="${e.color}"/><text x="${w - Rr + 15}" y="${e.y}" font-size="11.5" fill="var(--ink-2)">${e.name}</text>`);
+  ends.sort((a, b) => a.y - b.y); for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 16) ends[i].y = ends[i - 1].y + 16;
+  ends.forEach(e => g += `<circle cx="${w - Rr + 10}" cy="${e.y - 4}" r="4" fill="${e.color}"/><text x="${w - Rr + 18}" y="${e.y}" font-size="13" fill="var(--ink-2)">${e.name}</text>`);
   g += `<line class="xh" y1="${T}" y2="${T + ph}" stroke="var(--ink-3)" stroke-dasharray="3 3" visibility="hidden"/>`;
   el.innerHTML = svgEl(w, h, g, title);
   const svg = el.querySelector("svg"), xh = svg.querySelector(".xh");
@@ -341,15 +380,15 @@ function lineChart(el, { xs, series, yfmt, w = 600, h = 240, title, xlab }) {
 }
 function bridge(el, rows, w) {
   // rows: [{label, v, kind: 'total'|'delta'}]; horizontal bars from a common zero
-  const L = 250, Rr = 76, rh = 26, T = 8, h = T + rows.length * rh + 10;
+  const L = 300, Rr = 96, rh = 32, T = 8, h = T + rows.length * rh + 10;
   const vals = rows.map(r => r.v), lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
   const X = v => L + (v - lo) / ((hi - lo) || 1) * (w - L - Rr);
   let g = `<line x1="${X(0)}" x2="${X(0)}" y1="${T - 2}" y2="${h - 6}" stroke="var(--ink-3)"/>`;
   rows.forEach((r, i) => {
     const y = T + i * rh, c = r.kind === "total" ? "var(--ink-3)" : r.v >= 0 ? "var(--pos)" : "var(--neg)";
-    g += `<text x="${L - 10}" y="${y + 16}" text-anchor="end" font-size="12" fill="var(--ink${r.kind === "total" ? "" : "-2"})" font-weight="${r.kind === "total" ? 600 : 400}">${r.label}</text>
-      <rect x="${Math.min(X(0), X(r.v))}" y="${y + 5}" width="${Math.max(1, Math.abs(X(r.v) - X(0)))}" height="15" rx="3" fill="${c}" fill-opacity="${r.kind === "total" ? 0.45 : 0.85}"/>
-      <text x="${Math.max(X(0), X(r.v)) + 6}" y="${y + 16}" font-size="11.5" class="num" fill="var(--ink-2)">${money(r.v / 1e6, 2)}M</text>`;
+    g += `<text x="${L - 12}" y="${y + 21}" text-anchor="end" font-size="13.5" fill="var(--ink${r.kind === "total" ? "" : "-2"})" font-weight="${r.kind === "total" ? 600 : 400}">${r.label}</text>
+      <rect x="${Math.min(X(0), X(r.v))}" y="${y + 6}" width="${Math.max(1, Math.abs(X(r.v) - X(0)))}" height="19" rx="3" fill="${c}" fill-opacity="${r.kind === "total" ? 0.45 : 0.85}"/>
+      <text x="${Math.max(X(0), X(r.v)) + 8}" y="${y + 20}" font-size="13" class="num" fill="var(--ink-2)">${money(r.v / 1e6, 2)}M</text>`;
   });
   el.innerHTML = svgEl(w, h, g, "Settlement attribution");
 }
@@ -366,39 +405,42 @@ async function renderSettle() {
   const row = key => {
     const s = R["s_" + key], net = s.map((v, w) => v + R.merch[w]);
     const nf = full.map(w => net[w]).sort((a, b) => a - b);
-    return { key, ap: key[0], tr: key.slice(2), S: sum(s), V: sum(R["v_" + key]), net: sum(net), sd: sd(nf), p10: quant(nf, 0.1), worst: nf[0], weekly: net, s };
+    const ww = full.reduce((b, w) => net[w] < net[b] ? w : b, full[0]);
+    return { key, ap: key[0], tr: key.slice(2), S: sum(s), V: sum(R["v_" + key]), net: sum(net), sd: sd(nf), dsd: dsd(nf), p10: quant(nf, 0.1), worst: nf[0], worstWk: ww, weekly: net, s };
   };
   const rows = KEYS.map(row);
   const sel = { a: rows.find(r => r.key === "a_" + S.tr.a), b: rows.find(r => r.key === "b_" + S.tr.b), c: rows.find(r => r.key === "c_" + S.tr.c) };
-  const mf = full.map(w => R.merch[w]).sort((a, b) => a - b), msd = sd(mf);
+  const mf = full.map(w => R.merch[w]).sort((a, b) => a - b), msd = sd(mf), mdsd = dsd(mf), mww = full.reduce((b, w) => R.merch[w] < R.merch[b] ? w : b, full[0]);
+  const wkDate = w => w == null ? "" : `week from ${SETTLE.weeks[R.w0 + w]}`;
   $("stkpi").innerHTML = [
     ["Farm output", fmt(EG / 1000, 1) + " GWh", `${fmt(EG / (u.cap * R.nint.reduce((a, b) => a + b, 0) * H) * 100, 1)}% CF`],
     ["Merchant", money(M / 1e6, 2) + "M", `${money(M / EG, 1)}/MWh · floored at $0`],
     ...["a", "b", "c"].map(a => [AP[a], money(sel[a].net / 1e6, 2) + "M", `${money(sel[a].net / EG, 1)}/MWh · settlement ${money(sel[a].S / 1e6, 2)}M`])
   ].map(([a, v, s]) => `<div class="kpi"><span>${a}</span><b>${v}</b><small>${s}</small></div>`).join("");
   // comparison table
-  $("cmps").textContent = `${u.name}, ${S.y0 === S.y1 ? S.y0 : S.y0 + "–" + S.y1} · K ${money(S.k, 2)}/MWh · Q ${fmt(S.q)} MW · weekly statistics over ${full.length} complete weeks · highlighted rows are the selected trace per approach`;
+  $("cmps").textContent = `${u.name}, ${S.y0 === S.y1 ? S.y0 : S.y0 + "–" + S.y1} · K ${money(S.k, 2)}/MWh · Q ${fmt(S.q)} MW · weekly statistics over ${full.length} complete weeks (hover a worst-week value for its date) · P10 = the week 10% of weeks fall below · highlighted rows are the selected trace per approach`;
   const tr = (cls, cells) => `<tr class="${cls}">${cells.join("")}</tr>`;
   const td = (v, d = 2, isMoney = true) => `<td class="${v < 0 ? "neg" : ""}">${isMoney ? money(v / 1e6, d) : fmt(v, d)}</td>`;
-  let h = `<table><thead><tr><th>Approach</th><th>Trace</th><th>Contract GWh</th><th>Settlement $M</th><th>Net revenue $M</th><th>Net $/MWh</th><th>vs merchant $/MWh</th><th>Weekly SD $k</th><th>P10 week $k</th><th>Worst week $k</th></tr></thead><tbody>`;
-  h += tr("", [`<td class="l"><span class="tag m">M</span>Merchant only</td>`, `<td class="l">–</td>`, `<td>–</td>`, `<td>–</td>`, td(M), `<td>${money(M / EG, 1)}</td>`, `<td>–</td>`, `<td>${fmt(msd / 1000, 0)}</td>`, `<td>${money(quant(mf, 0.1) / 1000, 0)}</td>`, `<td>${money(mf[0] / 1000, 0)}</td>`]);
+  let h = `<table><thead><tr><th>Approach</th><th>Trace</th><th>Contract GWh</th><th>Settlement $M</th><th>Net revenue $M</th><th>Net $/MWh</th><th>vs merchant $/MWh</th><th>Weekly SD $k</th><th>Downside SD $k</th><th>P10 week $k</th><th>Worst week $k</th></tr></thead><tbody>`;
+  h += tr("", [`<td class="l"><span class="tag m">M</span>Merchant only</td>`, `<td class="l">–</td>`, `<td>–</td>`, `<td>–</td>`, td(M), `<td>${money(M / EG, 1)}</td>`, `<td>–</td>`, `<td>${fmt(msd / 1000, 0)}</td>`, `<td>${fmt(mdsd / 1000, 0)}</td>`, `<td>${money(quant(mf, 0.1) / 1000, 0)}</td>`, `<td title="${wkDate(mww)}">${money(mf[0] / 1000, 0)}</td>`]);
   for (const r of rows) {
     const d = sel[r.ap].key === r.key ? "dflt" : "";
     h += tr(d, [`<td class="l"><span class="tag ${r.ap}">${r.ap.toUpperCase()}</span>${AP[r.ap].slice(4)}</td>`, `<td class="l">${TRN[r.tr]}</td>`, `<td>${fmt(r.V / 1000, 1)}</td>`, td(r.S), td(r.net),
-      `<td>${money(r.net / EG, 1)}</td>`, `<td class="${(r.net - M) < 0 ? "neg" : ""}">${money((r.net - M) / EG, 1)}</td>`, `<td>${fmt(r.sd / 1000, 0)}</td>`, `<td>${money(r.p10 / 1000, 0)}</td>`, `<td>${money(r.worst / 1000, 0)}</td>`]);
+      `<td>${money(r.net / EG, 1)}</td>`, `<td class="${(r.net - M) < 0 ? "neg" : ""}">${money((r.net - M) / EG, 1)}</td>`, `<td>${fmt(r.sd / 1000, 0)}</td>`, `<td>${fmt(r.dsd / 1000, 0)}</td>`, `<td>${money(r.p10 / 1000, 0)}</td>`, `<td title="${wkDate(r.worstWk)}">${money(r.worst / 1000, 0)}</td>`]);
   }
   $("cmp").innerHTML = h + `</tbody></table>`;
   // cumulative + weekly
-  const W = Math.max(320, Math.min(760, $("st1").clientWidth || 600));
+  const W = Math.max(320, $("st1").clientWidth || 700);
   const wk = Array.from({ length: R.nW }, (_, w) => SETTLE.weeks[R.w0 + w] || "");
   const cum = a => { let c = 0; return a.map(v => (c += v) / 1e6); };
   const lines = [{ name: "Merchant", color: css("--ink-3"), vals: cum(Array.from(R.merch)), dash: "4 3", width: 1.5 },
     ...["a", "b", "c"].map((a, i) => ({ name: `${a.toUpperCase()} · ${S.tr[a] === "so" ? "SO" : "UIGF"}`, color: css(["--s1", "--s2", "--s7"][i]), vals: cum(sel[a].weekly) }))];
-  lineChart($("st1"), { xs: wk, series: lines, yfmt: v => v == null ? "–" : money(v, 1) + "M", w: W, h: 250, title: "Cumulative net revenue", xlab: i => `Week from ${wk[i]}` });
-  const W3 = Math.max(320, Math.min(1240, $("st3").clientWidth || 900));
-  lineChart($("st3"), { xs: wk, series: [{ name: "Merchant", color: css("--ink-3"), vals: Array.from(R.merch, v => v / 1000), dash: "4 3", width: 1.25 },
-    ...["a", "b", "c"].map((a, i) => ({ name: `${a.toUpperCase()} · ${S.tr[a] === "so" ? "SO" : "UIGF"}`, color: css(["--s1", "--s2", "--s7"][i]), vals: sel[a].weekly.map(v => v / 1000), width: 1.25 }))],
-    yfmt: v => v == null ? "–" : money(v, 0) + "k", w: W3, h: 260, title: "Weekly net revenue", xlab: i => `Week from ${wk[i]}` });
+  lineChart($("st1"), { xs: wk, series: lines, yfmt: v => v == null ? "–" : money(v, 1) + "M", w: W, h: 340, title: "Cumulative net revenue", xlab: i => `Week from ${wk[i]}` });
+  const W3 = Math.max(320, $("st3").clientWidth || 1200);
+  const inFull = new Set(full), keepW = (v, w) => inFull.has(w) ? v / 1000 : null;
+  lineChart($("st3"), { xs: wk, series: [{ name: "Merchant", color: css("--ink-3"), vals: Array.from(R.merch, keepW), dash: "4 3", width: 1.5 },
+    ...["a", "b", "c"].map((a, i) => ({ name: `${a.toUpperCase()} · ${S.tr[a] === "so" ? "SO" : "UIGF"}`, color: css(["--s1", "--s2", "--s7"][i]), vals: Array.from(sel[a].weekly, keepW), width: 1.5 }))],
+    yfmt: v => v == null ? "–" : money(v, 0) + "k", w: W3, h: 380, title: "Weekly net revenue", xlab: i => `Week from ${wk[i]}` });
   // attribution bridge (A -> B and A -> C, each on its own selected trace)
   const tb = S.tr.b, tc = S.tr.c, aB = rows.find(r => r.key === "a_" + tb), aC = rows.find(r => r.key === "a_" + tc);
   const traceEffB = tb === S.tr.a ? 0 : aB.S - sel.a.S;
@@ -413,7 +455,7 @@ async function renderSettle() {
     { label: `Cap at ${money(S.cap, 0)}`, v: R.att[tc].kocap, kind: "delta" },
     { label: `= C on ${TRS[tc]} trace`, v: sel.c.S, kind: "total" }];
   $("st2s").textContent = `Settlement $M for the period · each step is the change in settlement from that rule alone`;
-  bridge($("st2"), bridgeRows, Math.max(320, Math.min(760, $("st2").clientWidth || 600)));
+  bridge($("st2"), bridgeRows, Math.max(320, $("st2").clientWidth || 700));
   window.__settle = { R, rows, M, EG };   // exposed for verification
 }
 
@@ -442,17 +484,17 @@ function renderFleet() {
       }
     }
     if (mw.length < 4 || EG <= 0) continue;
-    const msd = sd(mw);
+    const msd = dsd(mw);
     rows.push({ u, n: mw.length, EG, cf: EG / (u.cap * mw.length * 168), merch: MG / EG,
       net_a: (MG + tot.a) / EG, net_b: (MG + tot.b) / EG, net_c: (MG + tot.c) / EG,
-      red_a: sd(nets.a) / msd - 1, red_b: sd(nets.b) / msd - 1, red_c: sd(nets.c) / msd - 1 });
+      red_a: dsd(nets.a) / msd - 1, red_b: dsd(nets.b) / msd - 1, red_c: dsd(nets.c) / msd - 1 });
   }
   const per = S.y0 === S.y1 ? S.y0 : `${S.y0}–${S.y1}`;
   $("fl1s").textContent = `${rows.length} ${S.ftech} assets${S.freg ? " in " + S.freg : ""}, ${per} · $/MWh of each asset's own output · K ${money(S.fk, 0)} · contract ${fmt(S.fr)}% of capacity`;
-  const W1 = Math.max(320, Math.min(760, $("fl1").clientWidth || 600));
+  const W1 = Math.max(320, $("fl1").clientWidth || 700);
   boxRows($("fl1"), [["Merchant", rows.map(r => r.merch), "m"], [AP.a, rows.map(r => r.net_a), "a"], [AP.b, rows.map(r => r.net_b), "b"], [AP.c, rows.map(r => r.net_c), "c"]], v => money(v, 0), W1, "$/MWh");
   boxRows($("fl2"), [[AP.a, rows.map(r => r.red_a * 100), "a"], [AP.b, rows.map(r => r.red_b * 100), "b"], [AP.c, rows.map(r => r.red_c * 100), "c"]], v => (v > 0 ? "+" : "") + fmt(v, 0) + "%", W1, "%");
-  const cols = [["name", "Asset"], ["region", "Region"], ["cap", "MW"], ["cf", "CF"], ["merch", "Merchant $/MWh"], ["net_a", "A net $/MWh"], ["net_b", "B net $/MWh"], ["net_c", "C net $/MWh"], ["red_a", "A SD vs merchant"], ["red_b", "B SD vs merchant"], ["red_c", "C SD vs merchant"], ["n", "Weeks"]];
+  const cols = [["name", "Asset"], ["region", "Region"], ["cap", "MW"], ["cf", "CF"], ["merch", "Merchant $/MWh"], ["net_a", "A net $/MWh"], ["net_b", "B net $/MWh"], ["net_c", "C net $/MWh"], ["red_a", "A downside SD vs merchant"], ["red_b", "B downside SD vs merchant"], ["red_c", "C downside SD vs merchant"], ["n", "Weeks"]];
   const val = (r, k) => k === "name" ? r.u.name : k === "region" ? r.u.region : k === "cap" ? r.u.cap : r[k];
   const { k, d } = S.fsort;
   rows.sort((a, b) => { const x = val(a, k), y = val(b, k); return (typeof x === "string" ? x.localeCompare(y) : x - y) * d; });
@@ -464,22 +506,22 @@ function renderFleet() {
   window.__fleet = rows;
 }
 function boxRows(el, groups, f, w, unit) {
-  const L = 170, Rr = 60, rh = 34, T = 24, h = T + groups.length * rh + 6;
+  const L = 210, Rr = 76, rh = 42, T = 28, h = T + groups.length * rh + 8;
   const all = groups.flatMap(g => g[1]).filter(isFinite); if (!all.length) { el.innerHTML = `<p class="note">No assets with data in this period.</p>`; return; }
   const sorted = all.slice().sort((a, b) => a - b), lo0 = quant(sorted, 0.01), hi0 = quant(sorted, 0.99);
   const ticks = niceTicks(Math.min(lo0, 0), hi0, 5), a = ticks[0], b = ticks.at(-1), X = v => L + (Math.max(a, Math.min(b, v)) - a) / (b - a) * (w - L - Rr);
   let g = "";
-  ticks.forEach(t => g += `<line x1="${X(t)}" x2="${X(t)}" y1="${T - 6}" y2="${h - 6}" stroke="var(--rule-2)"/><text x="${X(t)}" y="${T - 10}" text-anchor="middle" font-size="11" class="num" fill="var(--ink-3)">${f(t)}</text>`);
+  ticks.forEach(t => g += `<line x1="${X(t)}" x2="${X(t)}" y1="${T - 6}" y2="${h - 6}" stroke="var(--rule-2)"/><text x="${X(t)}" y="${T - 10}" text-anchor="middle" font-size="12.5" class="num" fill="var(--ink-3)">${f(t)}</text>`);
   const col = { m: "var(--ink-3)", a: "var(--s1)", b: "var(--s2)", c: "var(--s7)" };
   groups.forEach(([name, vals, c], i) => {
     const s = vals.filter(isFinite).sort((x, y) => x - y), y = T + i * rh + rh / 2;
     if (!s.length) return;
     const q = [0.1, 0.25, 0.5, 0.75, 0.9].map(p => quant(s, p));
-    g += `<g data-i="${i}"><rect x="0" y="${y - rh / 2}" width="${w}" height="${rh}" fill="transparent"/><text x="${L - 10}" y="${y + 4}" text-anchor="end" font-size="12" fill="var(--ink-2)">${name}</text>
+    g += `<g data-i="${i}"><rect x="0" y="${y - rh / 2}" width="${w}" height="${rh}" fill="transparent"/><text x="${L - 10}" y="${y + 4}" text-anchor="end" font-size="13.5" fill="var(--ink-2)">${name}</text>
       <line x1="${X(q[0])}" x2="${X(q[4])}" y1="${y}" y2="${y}" stroke="${col[c]}" stroke-width="1.25"/>
       <rect x="${X(q[1])}" y="${y - 7}" width="${Math.max(1, X(q[3]) - X(q[1]))}" height="14" rx="3" fill="${col[c]}" fill-opacity=".22" stroke="${col[c]}"/>
       <line x1="${X(q[2])}" x2="${X(q[2])}" y1="${y - 8}" y2="${y + 8}" stroke="${col[c]}" stroke-width="2.5"/>
-      <text x="${w - Rr + 8}" y="${y + 4}" font-size="11" class="num" fill="var(--ink-2)">${f(q[2])}</text></g>`;
+      <text x="${w - Rr + 8}" y="${y + 4}" font-size="12.5" class="num" fill="var(--ink-2)">${f(q[2])}</text></g>`;
   });
   el.innerHTML = svgEl(w, h, g, "Distribution across assets");
   el.querySelectorAll("g[data-i]").forEach(n => {
