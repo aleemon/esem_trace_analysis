@@ -39,6 +39,7 @@ read_aemo <- function(zip, table, keep, duids = NULL, nested = FALSE, opt = char
   cat_cmd <- if (nested) {
     sprintf("d=$(mktemp -d); unzip -q -o %s -d \"$d\"; for f in \"$d\"/*.zip; do unzip -p \"$f\"; done; rm -rf \"$d\"", shQuote(zip))
   } else sprintf("unzip -p %s", shQuote(zip))
+  cat_cmd <- sprintf("{ %s; } | tr -d '\\r'", cat_cmd)   # older MMSDM (PUBLIC_DVD_) files are CRLF: the last column name would carry a \r
   hdr <- suppressWarnings(system(sprintf("{ %s; } | grep -m1 -F %s", cat_cmd, shQuote(paste0("I,", table))), intern = TRUE))
   if (!length(hdr)) return(NULL)
   cols <- strsplit(hdr[1], ",", fixed = TRUE)[[1]]
