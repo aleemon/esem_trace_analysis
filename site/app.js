@@ -397,8 +397,8 @@ async function renderSettle() {
   let E; try { E = await loadUnit(); } catch (e) { $("stkpi").innerHTML = `<span class="err">${e.message}</span>`; return; }
   if (tok !== exToken) return; EX = E;
   const u = E.u;
-  $("bdesc").textContent = `Floating clamped to ${money(S.floor, 0)} – ${money(S.cap, 0)}`;
-  $("cdesc").textContent = `Floating capped at ${money(S.cap, 0)}; quantity 0 when price < $0`;
+  $("bdesc").textContent = `Floating price limited to ${money(S.floor, 0)} – ${money(S.cap, 0)}`;
+  $("cdesc").textContent = `Floating price capped at ${money(S.cap, 0)}; quantity 0 when price < $0`;
   const R = settle(E, S);
   const full = []; for (let w = 0; w < R.nW; w++) if (R.nint[w] >= 0.9 * 2016 && R.ok[w] >= 0.9 * 2016) full.push(w);
   const M = sum(R.merch), EG = sum(R.energy), MR = sum(R.merchRaw);
