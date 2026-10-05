@@ -112,8 +112,8 @@ if (!length(derived)) stop("nothing built")
 n_weeks <- as.integer(ceiling((as.numeric(as.POSIXct(sprintf("%d-01-08", max(years) + 1), tz = "UTC")) - REF_SUN) / 604800))
 assemble(units, derived, OUT, n_weeks,
          list(source = SOURCE, generated = format(Sys.time(), "%Y-%m-%d %H:%M %Z", tz = "Australia/Sydney"),
-              data_end = format(as.POSIXct(data_end + NEM_OFF, origin = "1970-01-01", tz = "UTC"), "%Y-%m-%d %H:%M")))
+              data_end = format(as.POSIXct(data_end + NEM_OFF, origin = "1970-01-01", tz = "UTC"), "%Y-%m-%d %H:%M")), caph_all = caph)
 unlink(SITE, recursive = TRUE); dir.create(SITE, recursive = TRUE)
-keep <- c("meta.json", "settle.bin", unlist(lapply(derived, function(d) c(vapply(d$files$idx, `[[`, "", "file"), vapply(d$files$unit, `[[`, "", "file")))))
+keep <- c("meta.json", "settle.bin", if (file.exists(file.path(OUT, "baskets.csv"))) "baskets.csv", unlist(lapply(derived, function(d) c(vapply(d$files$idx, `[[`, "", "file"), vapply(d$files$unit, `[[`, "", "file")))))
 for (f in keep) { dir.create(dirname(file.path(SITE, f)), recursive = TRUE, showWarnings = FALSE); file.copy(file.path(OUT, f), file.path(SITE, f), overwrite = TRUE) }
 log_msg("site/data: %d files, %.1f MB", length(keep), sum(file.size(file.path(SITE, keep))) / 1e6)
