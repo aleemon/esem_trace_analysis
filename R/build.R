@@ -125,7 +125,7 @@ build_year <- function(y, months, units, caph, out_dir, data_end) {
 }
 
 # ---- combine all years into settle.bin and meta.json ----
-assemble <- function(units, derived, out_dir, n_weeks, extra_meta = list()) {
+assemble <- function(units, derived, out_dir, n_weeks, extra_meta = list(), caph_all = NULL) {
   rts <- unique(rbindlist(lapply(derived, function(d) rbindlist(lapply(d$rt, function(x) x[1, .(region, tech)])))))
   setorder(rts, region, tech); rts[, ri := seq_len(.N) - 1L]
   agg <- function(dt, keys, fields, ids) {
@@ -163,6 +163,17 @@ assemble <- function(units, derived, out_dir, n_weeks, extra_meta = list()) {
                  idx = do.call(c, lapply(derived, function(d) d$files$idx)),
                  unit_parts = do.call(c, lapply(derived, function(d) d$files$unit)),
                  settle = list(file = "settle.bin", bytes = sz)))
+  # basket membership for checking: one row per year x unit, with the date and basis used for the 6-month rule
+  bl <- rbindlist(lapply(names(baskets), function(y) rbindlist(lapply(names(baskets[[y]]), function(r) rbindlist(lapply(names(baskets[[y]][[r]]), function(tk)
+    if (length(baskets[[y]][[r]][[tk]]$duids)) data.table(year = as.integer(y), region = r, tech = tk, duid = baskets[[y]][[r]][[tk]]$duids)))))))
+  if (nrow(bl)) {
+    bl <- units[, .(duid, name, cap_now = cap, reg_date, first_gen, first_op, end_date)][bl, on = "duid"]
+    bl[, cap_jan := cap_at(caph_all, duid, as.Date(sprintf("%d-01-01", year))), by = year]
+    bl[, basis := fifelse(!is.na(first_gen) & first_op < first_gen, "registration date (already generating when the fetched history starts)", "first SCADA >= 1 MW")]
+    bl[end_date >= as.Date("2999-01-01"), end_date := NA]
+    setcolorder(bl, c("year", "region", "tech", "duid", "name", "cap_jan", "reg_date", "first_gen", "first_op", "basis", "end_date"))
+    fwrite(bl[order(year, region, tech, duid), !"cap_now"], file.path(out_dir, "baskets.csv"))
+  }
   jsonlite::write_json(meta, file.path(out_dir, "meta.json"), auto_unbox = TRUE, digits = NA, null = "null", na = "null")
   invisible(meta)
 }
