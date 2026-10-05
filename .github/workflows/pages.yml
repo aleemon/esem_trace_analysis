@@ -52,6 +52,7 @@ jobs:
         run: bash scripts/release_sync.sh restore
       - name: Fetch and build
         env:
+          START_YEAR: ${{ vars.START_YEAR || '' }}
           YEARS_BACK: ${{ vars.YEARS_BACK || '5' }}
           FORCE: ${{ inputs.force && 'true' || 'false' }}
         run: Rscript run.R
