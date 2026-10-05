@@ -41,9 +41,9 @@ build_year <- function(y, months, units, caph, out_dir, data_end) {
   if (tN < t0) return(NULL)
   n <- as.integer(round((tN - t0) / DT_SEC)) + 1L; tt <- t0 + (seq_len(n) - 1) * DT_SEC
   ix <- function(t) as.integer(round((t - t0) / DT_SEC)) + 1L
-  sc <- rbindlist(lapply(months, `[[`, "scada"))[t >= t0 & t <= tN]
-  dp <- rbindlist(lapply(months, `[[`, "disp"))[t >= t0 & t <= tN]
-  pr <- rbindlist(lapply(months, `[[`, "price"))[t >= t0 & t <= tN]
+  sc <- rbindlist(lapply(months, `[[`, "scada"), use.names = TRUE)[t >= t0 & t <= tN]
+  dp <- rbindlist(lapply(months, `[[`, "disp"), use.names = TRUE)[t >= t0 & t <= tN]
+  pr <- rbindlist(lapply(months, `[[`, "price"), use.names = TRUE)[t >= t0 & t <= tN]
   setkey(sc, duid); setkey(dp, duid)
   basket <- basket_for(units, caph, y)
 
