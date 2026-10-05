@@ -63,7 +63,7 @@ the 1 January value.
 A basket unit with missing data in an interval is dropped from numerator and denominator for that interval only.
 
 **Settlement** per interval = trace CF × Q × (K − floating) × 5/60, summed by billing week (Sunday–Saturday, market time).
-Weekly statistics (SD, downside SD, P10, worst week) use complete weeks only: at least 90% of intervals with a price and farm SCADA. P10 is the 10th percentile of weekly net revenue (the low tail). Earnings-at-risk (EaR) = mean week − P10 week. Downside SD = √mean(min(x − mean, 0)²). The settlement tab also plots mean week against EaR for contract volumes of 0–200% of capacity in 10% steps (settlement is linear in Q, so each point scales a 1 MW settlement).
+Weekly statistics (SD, downside SD, P10, worst week) use complete weeks only: at least 90% of intervals with a price and farm SCADA. P10 is the 10th percentile of weekly net revenue (the low tail). Earnings-at-risk (EaR) = mean week − a low-tail measure, selectable on the page: P10 week (default), CVaR 10% (average of the worst 10% of weeks, fractional at the boundary) or parametric (1.28 × weekly SD). Downside SD = √mean(min(x − mean, 0)²). The settlement tab also plots mean week against EaR for contract volumes of 0–200% of capacity in 10% steps (settlement is linear in Q, so each point scales a 1 MW settlement).
 Positive is paid to the generator.
 
 | Approach | Floating price | Quantity |

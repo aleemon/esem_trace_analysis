@@ -116,6 +116,13 @@ td.l{text-align:left;font-family:var(--f-ui)}
 .stack{display:grid;gap:14px;min-width:0;align-content:start}
 .dl{float:right;display:inline-flex;gap:4px;margin:-4px 0 4px 12px}
 .toolbar .dl{float:none;margin:0}
+.rl{font-size:13px;font-weight:600;color:var(--ink-3)}
+.lgd{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 8px;margin-top:10px}
+.lgd button{display:inline-flex;align-items:center;gap:8px;font:500 13px var(--f-ui);color:var(--ink-2);background:var(--surface);border:1px solid var(--rule);border-radius:999px;padding:4px 12px;cursor:pointer}
+.lgd button i{display:inline-block;width:16px;height:4px;border-radius:2px}
+.lgd button[aria-pressed="false"]{color:var(--ink-3);border-style:dashed;opacity:.55}
+.lgd button[aria-pressed="false"] i{filter:grayscale(1)}
+.lgd button:hover{border-color:var(--ink-3)}
 .dl button{font:600 11.5px var(--f-num);letter-spacing:.04em;color:var(--ink-3);background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:3px 8px;cursor:pointer}
 .dl button:hover{color:var(--ink);border-color:var(--ink-3)}
 </style>
@@ -174,12 +181,12 @@ td.l{text-align:left;font-family:var(--f-ui)}
           <div class="nm"><span class="tag c">C</span><b>Cap + volume knockout</b><small id="cdesc">Floating capped at $600; quantity 0 when price &lt; 0</small></div>
           <div class="seg" role="group" aria-label="Trace for C"><button data-ap="c" data-tr="so" aria-pressed="true">Sent-out</button><button data-ap="c" data-tr="ug" aria-pressed="false">UIGF</button></div>
         </div>
-        <p class="note">NB: The UIGF trace differs from sent-out only in negative-price intervals, so approach C is unchanged where those intervals are knocked out.</p>
-        <p class="note">NB: Merchant = farm sent-out × spot, floored at $0 when the price is negative.</p>
+        <p class="note">The UIGF trace differs from sent-out only in negative-price intervals, so it cannot change approach C, where those intervals are knocked out.</p>
+        <p class="note">Merchant = farm sent-out × spot, floored at $0 when the price is negative.</p>
       </div>
       <div class="stack">
         <div class="kpis" id="stkpi" style="margin:0"></div>
-        <div class="panel"><h3>All approaches against both reference traces</h3><p class="sub" id="cmps"></p><div class="tblwrap" id="cmp" style="max-height:none"></div></div>
+        <div class="panel"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">All approaches against both reference traces</h3><span style="display:inline-flex;gap:8px;align-items:center"><span class="rl">EaR measure</span><div class="seg" role="group" aria-label="Earnings-at-risk measure"><button data-risk="p10" aria-pressed="true">P10</button><button data-risk="cvar" aria-pressed="false">CVaR 10%</button><button data-risk="param" aria-pressed="false">Parametric</button></div></span></div><p class="sub" id="cmps"></p><div class="tblwrap" id="cmp" style="max-height:none"></div></div>
       </div>
     </div>
     <div class="grid g2" style="margin-top:14px">
@@ -187,7 +194,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
       <div class="panel"><h3>What moves settlement between approaches</h3><p class="sub" id="st2s"></p><div id="st2"></div></div>
       <div class="panel" style="grid-column:1/-1"><h3>Distribution of weekly net revenue</h3><p class="sub" id="st4s"></p><div id="st4"></div></div>
       <div class="panel" style="grid-column:1/-1"><h3>Weekly net revenue</h3><p class="sub">$k per week · merchant vs each approach · complete weeks only (the same weeks as the table's statistics); partial weeks at the period edges are hidden here but included in totals</p><div id="st3"></div></div>
-      <div class="panel" style="grid-column:1/-1"><h3>Mean earnings vs earnings-at-risk by contract volume</h3><p class="sub" id="st5s"></p><div id="st5"></div></div>
+      <div class="panel" style="grid-column:1/-1"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Mean earnings vs earnings-at-risk by contract volume</h3><span style="display:inline-flex;gap:8px;align-items:center"><span class="rl">EaR measure</span><div class="seg" role="group" aria-label="Earnings-at-risk measure"><button data-risk="p10" aria-pressed="true">P10</button><button data-risk="cvar" aria-pressed="false">CVaR 10%</button><button data-risk="param" aria-pressed="false">Parametric</button></div></span></div><p class="sub" id="st5s"></p><div id="st5"></div></div>
     </div>
   </section>
 
