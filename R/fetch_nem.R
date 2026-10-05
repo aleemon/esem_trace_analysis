@@ -114,7 +114,8 @@ fetch_registry_month <- function(y, m, cache_dir) {
 
 fetch_mmsdm_month <- function(y, m, duids, tmp) {
   L <- mmsdm_files(y, m)
-  if (!length(pick(L$files, "DISPATCH_UNIT_SCADA"))) return(NULL)
+  if (!length(L$files)) stop("MMSDM folder listing empty or unreachable: ", L$url)
+  if (!length(pick(L$files, "DISPATCH_UNIT_SCADA"))) stop("no DISPATCH_UNIT_SCADA file in ", L$url)
   log_msg("MMSDM %d-%02d (%d DUIDs)", y, m, length(duids))
   scada <- shape_scada(mm_get(L, tmp, "DISPATCH_UNIT_SCADA", "DISPATCH,UNIT_SCADA,", c("SETTLEMENTDATE", "DUID", "SCADAVALUE"), duids))
   disp  <- shape_disp(mm_get(L, tmp, "DISPATCHLOAD", "DISPATCH,UNIT_SOLUTION,", disp_keep, duids, opt = "UIGF"))
@@ -125,6 +126,7 @@ fetch_mmsdm_month <- function(y, m, duids, tmp) {
     tp <- unique(tp[, .(t = aemo_time(SETTLEMENTDATE), region = chr(REGIONID), rrp = num(RRP))], by = c("t", "region"))
     price <- rbind(expand_30(tp)[t < CUT_5MS], price)
   }
+  for (k in c("scada", "disp", "price")) if (!NROW(get(k))) stop("MMSDM ", k, " table read as empty")
   list(scada = scada, disp = disp, price = price, complete = TRUE)
 }
 
@@ -152,21 +154,30 @@ fetch_day <- function(d, duids, tmp, cache_dir) {
 # ---------- month entry point ----------
 # Returns list(scada, disp, price, complete, duids). MMSDM months are kept for good unless the DUID list grows;
 # daily-built months are rebuilt each run from cached days until MMSDM publishes the month.
+# Each call records an outcome in FETCH_LOG (month, source, note), printed and saved by run.R.
+FETCH_LOG <- new.env()
+note_fetch <- function(y, m, src, msg = "") assign(sprintf("%d-%02d", y, m), list(src = src, msg = msg), envir = FETCH_LOG)
 fetch_nem_month <- function(y, m, duids, cache_dir, today = Sys.Date()) {
   f <- file.path(cache_dir, sprintf("%d%02d.rds", y, m))
-  if (file.exists(f)) { x <- readRDS(f); if (isTRUE(x$complete) && all(duids %chin% x$duids)) return(x) }
+  if (file.exists(f)) { x <- readRDS(f); if (isTRUE(x$complete) && all(duids %chin% x$duids)) { note_fetch(y, m, "cached"); return(x) } }
   tmp <- tempfile("nem"); dir.create(tmp); on.exit(unlink(tmp, recursive = TRUE))
-  x <- tryCatch(fetch_mmsdm_month(y, m, duids, tmp), error = function(e) { log_msg("MMSDM %d-%02d failed: %s", y, m, conditionMessage(e)); NULL })
+  err <- ""
+  x <- tryCatch(fetch_mmsdm_month(y, m, duids, tmp), error = function(e) { err <<- conditionMessage(e); log_msg("MMSDM %d-%02d failed: %s", y, m, err); NULL })
+  if (!is.null(x)) note_fetch(y, m, "mmsdm")
   if (is.null(x)) {
     m0 <- as.Date(sprintf("%d-%02d-01", y, m)); m1 <- seq(m0, by = "month", length.out = 2)[2] - 1
     if (m0 > today - 1) return(NULL)
+    if (m0 < seq(today, by = "-4 months", length.out = 2)[2]) {   # daily reports only cover recent months
+      note_fetch(y, m, "FAILED", err); return(NULL)
+    }
     days <- seq(m0 - 1, min(m1 + 1, today - 1), by = "day")
     parts <- lapply(days, function(d) tryCatch(fetch_day(d, duids, tmp, cache_dir), error = function(e) { log_msg("day %s failed: %s", d, conditionMessage(e)); NULL }))
     parts <- Filter(Negate(is.null), parts)
-    if (!length(parts)) return(NULL)
+    if (!length(parts)) { note_fetch(y, m, "FAILED", paste(err, "| no daily reports")); return(NULL) }
     lo <- as.numeric(as.POSIXct(m0, tz = "UTC")) - NEM_OFF; hi <- as.numeric(as.POSIXct(m1 + 1, tz = "UTC")) - NEM_OFF
     cut <- function(k, by) { d <- rbindlist(lapply(parts, `[[`, k)); unique(d[t > lo & t <= hi], by = by) }
     x <- list(scada = cut("scada", c("t", "duid")), disp = cut("disp", c("t", "duid")), price = cut("price", c("t", "region")), complete = FALSE)
+    note_fetch(y, m, "daily", err)
   }
   x$duids <- duids
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE); saveRDS(x, f)
