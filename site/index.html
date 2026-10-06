@@ -68,9 +68,26 @@ nav.top button:hover{color:var(--hdr-ink)}
 .guide td:first-child{color:var(--ink);font-weight:600;white-space:nowrap}
 .guide .go{font:inherit;font-size:13px;color:var(--navy-ink);background:none;border:1px solid var(--rule);border-radius:999px;padding:1px 10px;cursor:pointer;margin-left:6px;vertical-align:1px}
 .guide .go:hover{border-color:var(--navy-ink)}
+.guide figure{margin:16px 0 18px;padding:14px 14px 8px;background:var(--surface);border:1px solid var(--rule);border-radius:10px}
+.guide figure svg{display:block;width:100%;height:auto}
+.guide figcaption{font-size:13px;color:var(--ink-3);margin-top:6px}
+.dg text{font-family:var(--f-ui);font-size:13px;fill:var(--ink-2)}
+.dg .t{fill:var(--ink);font-weight:600}
+.dg .m{font-family:var(--f-num);font-size:12px}
+.dg .box{fill:var(--bg);stroke:var(--rule);stroke-width:1.2}
+.dg .ax{stroke:var(--ink-3);stroke-width:1}
+.dg .gr{stroke:var(--rule-2);stroke-width:1}
+.dg .ar{stroke:var(--ink-2);stroke-width:1.5;fill:none}
 .guide .callout{border-left:3px solid var(--amber);background:var(--amber-soft);padding:8px 14px;border-radius:0 6px 6px 0;margin:12px 0;color:var(--ink)}
 .contract .full{grid-column:1/-1}
-.navday{display:inline-flex;gap:6px;align-items:center}
+.navday{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px 8px;max-height:220px;overflow:auto;padding:8px;border:1px solid var(--rule);border-radius:6px}
+.kgrid label{gap:2px!important}.kgrid label>span{font-size:11px!important;letter-spacing:.02em!important}
+.kgrid input{width:100%;font-size:13.5px}
+.contract .chk{flex-direction:row!important;flex-wrap:wrap;align-items:center;gap:6px 8px!important;color:var(--ink)!important}
+.contract .chk input{width:auto;margin:0}
+.contract .chk small{flex-basis:100%;color:var(--ink-3);font-size:12.5px}
+.navbtn{font:inherit;font-size:12.5px;color:var(--ink-2);background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:3px 9px;cursor:pointer}
 .navday button{font:inherit;font-size:13px;color:var(--ink-2);background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:3px 9px;cursor:pointer}
 .shleg{display:inline-flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink-2)}
 .shleg i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
@@ -167,7 +184,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
 <header class="bar"><div class="bar-in">
   <div class="head-l">
     <div class="brand"><b>ESEM Contract Design Analysis</b><span id="dsinfo">loading…</span></div>
-    <nav class="top" role="tablist" aria-label="Section">><button role="tab" data-top="guide" aria-selected="false">Guide</button><button role="tab" data-top="bulk" aria-selected="true">Bulk Energy Contract</button><button role="tab" data-top="shape" aria-selected="false">Shaping Contract</button</nav>
+    <nav class="top" role="tablist" aria-label="Section"><button role="tab" data-top="bulk" aria-selected="true">Bulk Energy Contract</button><button role="tab" data-top="shape" aria-selected="false">Shaping Contract</button><button role="tab" data-top="guide" aria-selected="false">Guide</button></nav>
   </div>
   <div class="ctl" id="bulkctl">
     <div class="picker"><input type="search" id="unitq" placeholder="Choose a wind or solar farm…" autocomplete="off" aria-label="Choose a wind or solar farm" style="width:250px"><ul id="unitlist" hidden></ul></div>
@@ -215,13 +232,13 @@ td.l{text-align:left;font-family:var(--f-ui)}
         <div class="appr">
           <div class="nm"><span class="tag a">A</span><b>Exposed</b><small>Floating = spot price</small></div>
           <div class="seg" role="group" aria-label="Trace for A"><button data-ap="a" data-tr="so" aria-pressed="true">Sent-out</button><button data-ap="a" data-tr="ug" aria-pressed="false">UIGF</button></div>
-          <div class="nm"><span class="tag b">B</span><b>Cap + floor</b><small id="bdesc">Floating limited to $0 – $600</small></div>
+          <div class="nm"><span class="tag b">B</span><b>Cap + floor</b><small id="bdesc">Floating clamped to $0 – $600</small></div>
           <div class="seg" role="group" aria-label="Trace for B"><button data-ap="b" data-tr="so" aria-pressed="false">Sent-out</button><button data-ap="b" data-tr="ug" aria-pressed="true">UIGF</button></div>
           <div class="nm"><span class="tag c">C</span><b>Cap + volume knockout</b><small id="cdesc">Floating capped at $600; quantity 0 when price &lt; 0</small></div>
           <div class="seg" role="group" aria-label="Trace for C"><button data-ap="c" data-tr="so" aria-pressed="true">Sent-out</button><button data-ap="c" data-tr="ug" aria-pressed="false">UIGF</button></div>
         </div>
-        <p class="note">NB: The UIGF trace differs from sent-out only in negative-price intervals, so it cannot change approach C, where those intervals are knocked out.</p>
-        <p class="note">NB: Merchant = farm sent-out × spot, floored at $0 when the price is negative.</p>
+        <p class="note">The UIGF trace differs from sent-out only in negative-price intervals, so it cannot change approach C, where those intervals are knocked out.</p>
+        <p class="note">Merchant = farm sent-out × spot, floored at $0 when the price is negative.</p>
       </div>
       <div class="stack">
         <div class="kpis" id="stkpi" style="margin:0"></div>
@@ -269,9 +286,13 @@ td.l{text-align:left;font-family:var(--f-ui)}
         <label><span>Shaping day end</span><select id="sh-end"></select></label>
         <label><span>Quantity MW</span><input type="number" id="sh-q" value="100" min="0" step="10"></label>
         <label><span>Strike spread $/MWh</span><input type="number" id="sh-k" value="100" step="5"></label>
+        <label><span>Strike set by</span><select id="sh-kmode"><option value="single">Single value</option><option value="year">Year</option><option value="quarter">Quarter</option><option value="month">Month</option></select></label>
+        <div class="full kgrid" id="sh-kgrid" hidden></div>
+        <div class="full" style="display:flex;justify-content:flex-end;margin-top:-4px"><button type="button" class="navbtn" id="sh-kfill" hidden>Reset periods to the default strike</button></div>
         <label><span>Perfect-foresight capture %</span><input type="number" id="sh-pf" value="85" min="0" max="100" step="5"></label>
+        <label class="full chk"><input type="checkbox" id="sh-alt"> Alternate charge and discharge across days <small>the first window of a shaping day must be the opposite type to the last window of the day before</small></label>
       </div>
-      <p class="note">Blocks are made of half-hours inside the shaping day (start to end, market time; 28:00 = 04:00 the next morning, the end of the trading day). Each block totals the shaping duration, split into at most the maximum number of windows, each at least the minimum window long. The high block is chosen first; the low block is then chosen from the remaining half-hours.</p>
+      <p class="note">Blocks are made of half-hours inside the shaping day (start to end, market time; 28:00 = 04:00 the next morning, the end of the trading day). Each block totals the shaping duration, split into at most the maximum number of windows, each at least the minimum window long. The high (discharge) block is chosen first; the low (charge) block is then chosen from the remaining half-hours. With alternation on, a day whose first window would repeat the type of the previous day's last window is re-blocked: the pair with the widest high-minus-low residual demand that starts with the other type.</p>
       <p class="note">A day is settled only if the nomination run, the residual demand and the spot price cover every half-hour of the shaping day. Predispatch runs before about 12:30 only reach 04:00 on the shaping day, so early nominations leave most days unsettled.</p>
     </div>
     <div class="stack">
@@ -282,10 +303,13 @@ td.l{text-align:left;font-family:var(--f-ui)}
   <div class="grid" style="margin-top:14px">
     <div class="panel"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Spot price, predispatch price and residual demand, with shaping blocks</h3>
       <span class="navday"><button id="sh-prev" title="Previous week">◀</button><input type="date" id="sh-day" aria-label="First day shown"><button id="sh-next" title="Next week">▶</button>
-      <span class="rl">Blocks from</span><div class="seg" role="group" aria-label="Blocks shown" id="sh-bb"><button data-v="rd" aria-pressed="true">Residual demand</button><button data-v="pd">PD price</button><button data-v="pf">Perfect foresight</button></div>
+      <span class="rl">Blocks from</span><div class="seg" role="group" aria-label="Blocks shown (select one or more)" id="sh-bb" title="Select one or more"><button data-v="rd" aria-pressed="true">Residual demand</button><button data-v="pd" aria-pressed="false">PD price</button><button data-v="pf" aria-pressed="false">Perfect foresight</button></div>
       <select id="sh-pax" aria-label="Price axis"><option value="zoom" selected>−100 to 300</option><option value="mid">−1000 to 2000</option><option value="full">Full range</option></select></span></div>
       <p class="sub" id="sh1s"></p><div id="sh1"></div><div class="shleg" id="sh1l"></div></div>
-    <div class="panel"><h3>When the blocks fall: residual demand vs predispatch price vs perfect foresight</h3><p class="sub" id="sh2s"></p><div id="sh2"></div></div>
+    <div class="grid g2">
+      <div class="panel"><h3>When the blocks fall: charging</h3><p class="sub" id="sh2as"></p><div id="sh2a"></div></div>
+      <div class="panel"><h3>When the blocks fall: discharging</h3><p class="sub" id="sh2bs"></p><div id="sh2b"></div></div>
+    </div>
     <div class="grid g2">
       <div class="panel"><h3>Cumulative settlement</h3><p class="sub" id="sh3s"></p><div id="sh3"></div></div>
       <div class="panel"><h3>Monthly settlement</h3><p class="sub" id="sh4s"></p><div id="sh4"></div></div>
@@ -313,11 +337,25 @@ td.l{text-align:left;font-family:var(--f-ui)}
    </nav>
    <article>
     <h2 id="g-about">About this tool</h2>
-    <p>This dashboard tests the proposed ESEM contract designs against historical NEM data: a <b>bulk energy contract</b> that settles a wind or solar farm against a regional reference generation profile, and a <b>shaping contract</b> that settles the spread between high- and low-demand periods each day.</p>
-    <p>Everything is computed in the browser from pre-built data files, so every input (fixed prices, quantities, caps, block rules) can be changed and the results update immediately. Every chart and table has <b>PNG</b> and <b>CSV</b> export buttons.</p>
+    <p>This dashboard tests two contract designs against historical NEM data: a <b>bulk energy contract</b> that settles a wind or solar farm against a regional reference generation profile, and a <b>shaping contract</b> that settles the spread between high- and low-demand periods each day. Both are explored here as designs specified for this analysis; they are not a published term sheet.</p>
+    <p>Everything is computed in your browser from pre-built data files, so every input (fixed prices, quantities, caps, block rules) can be changed and the results update immediately. Every chart and table has <b>PNG</b> and <b>CSV</b> buttons; the CSV holds the numbers behind the visual at the current settings.</p>
 
     <h2 id="g-bulk">Bulk energy contract <button class="go" data-goto="bulk:farm">open</button></h2>
     <p>A fixed-for-floating swap whose volume follows a <b>regional reference trace</b> rather than the farm's own output. The farm keeps selling its actual output at spot (its merchant revenue); the contract then pays it the fixed price and charges it the floating price on the reference volume. Because the volume is regional, the farm keeps its own <b>basis risk</b>: weeks when it under- or over-performs its region, or captures a different price, are not hedged.</p>
+    <figure>
+     <svg class="dg" viewBox="0 0 900 300" role="img" aria-label="Cash flows of the bulk energy contract">
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-2)"/></marker></defs>
+      <rect class="box" x="20" y="20" width="200" height="240" rx="8"/><text class="t" x="120" y="134" text-anchor="middle">Wind or solar farm</text><text x="120" y="155" text-anchor="middle">generates actual output</text>
+      <rect class="box" x="640" y="20" width="240" height="84" rx="8"/><text class="t" x="760" y="56" text-anchor="middle">Spot market</text><text x="760" y="77" text-anchor="middle">regional 5-min price P</text>
+      <rect class="box" x="640" y="176" width="240" height="84" rx="8"/><text class="t" x="760" y="212" text-anchor="middle">Contract counterparty</text><text x="760" y="233" text-anchor="middle">settles weekly</text>
+      <line class="ar" x1="222" y1="46" x2="636" y2="46" marker-end="url(#ah)"/><text x="430" y="38" text-anchor="middle">actual output, MWh</text>
+      <line class="ar" x1="636" y1="82" x2="224" y2="82" marker-end="url(#ah)"/><text x="430" y="74" text-anchor="middle" class="m">merchant: output × max(P, 0)</text>
+      <line class="ar" x1="636" y1="202" x2="224" y2="202" marker-end="url(#ah)"/><text x="430" y="194" text-anchor="middle" class="m">K × reference volume</text>
+      <line class="ar" x1="222" y1="238" x2="636" y2="238" marker-end="url(#ah)"/><text x="430" y="230" text-anchor="middle" class="m">floating × reference volume</text>
+      <text x="20" y="290" class="m">reference volume = trace CF × Q × 5/60 h · trace CF = Σ basket output ÷ Σ basket capacity, basket fixed each 1 January</text>
+     </svg>
+     <figcaption>The farm keeps its merchant revenue on actual output. The contract adds (K − floating) on a volume set by the regional reference trace, not the farm's own output; the difference between the two volumes is the basis the farm keeps.</figcaption>
+    </figure>
 
     <h3 id="g-trace">Reference trace</h3>
     <ul>
@@ -325,6 +363,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
      <li><b>Sent-out trace.</b> In each 5-minute interval, the sum of basket sent-out generation (SCADA, clamped to 0–capacity) ÷ the sum of basket capacity. A unit with missing data drops out of both numerator and denominator for that interval only.</li>
      <li><b>UIGF-on-negative trace.</b> The same, except that in intervals with a negative regional price each unit's unconstrained forecast (UIGF) replaces its sent-out. It removes the volume lost to economic curtailment, so the contract volume no longer shrinks when prices go negative.</li>
     </ul>
+    <div class="callout">The reference trace has no individual unit caps: it is a pure capacity-weighted aggregate, so no single unit's share of the basket is limited. A large unit, or one in a small regional basket, moves the trace in proportion to its capacity, and an outage or curtailment at that unit shows up in the trace. (Each unit's 5-minute output is bounded to 0–registered capacity as a data-quality check; that is not a weighting cap.)</div>
     <p>Each farm's header shows the years its own unit was in its basket, and links to a CSV of every basket member with the dates used for the six-month rule.</p>
 
     <h3 id="g-settle">Settlement and the three approaches</h3>
@@ -338,8 +377,29 @@ td.l{text-align:left;font-family:var(--f-ui)}
       <tr><td>C · Cap + knockout</td><td>Spot capped at the cap</td><td>Zero when spot &lt; $0</td><td>Spikes capped as in B; negative-price intervals drop out of the contract entirely.</td></tr>
      </tbody>
     </table>
+    <figure>
+     <svg class="dg" viewBox="0 0 900 290" role="img" aria-label="Floating price paid under approaches A, B and C as a function of spot">
+      <rect x="110" y="40" width="128" height="222" fill="var(--neg)" opacity=".08"/>
+      <text x="174" y="252" text-anchor="middle" class="m" style="fill:var(--neg)">C: no volume</text>
+      <line class="gr" x1="110" x2="760" y1="40" y2="40"/><line class="gr" x1="110" x2="760" y1="67.5" y2="67.5"/><line class="gr" x1="110" x2="760" y1="177.5" y2="177.5"/>
+      <line class="ax" x1="110" x2="760" y1="150" y2="150"/><line class="ax" x1="238" x2="238" y1="30" y2="262"/>
+      <line class="gr" x1="642" x2="642" y1="40" y2="262" stroke-dasharray="3 3"/>
+      <text x="230" y="146" text-anchor="end" class="m">$0</text><text x="230" y="44" text-anchor="end" class="m">$800</text><text x="230" y="71" text-anchor="end" class="m">$600</text><text x="230" y="182" text-anchor="end" class="m">−$200</text>
+      <text x="238" y="278" text-anchor="middle" class="m">spot $0</text><text x="642" y="278" text-anchor="middle" class="m">spot = cap $600</text>
+      <polyline points="110,176.2 760,43.4" fill="none" stroke="var(--s1)" stroke-width="2.5"/>
+      <polyline points="110,150 238,150 642,67.5 760,67.5" fill="none" stroke="var(--s2)" stroke-width="3" stroke-dasharray="8 5"/>
+      <polyline points="238,156 642,73.5 760,73.5" fill="none" stroke="var(--s7)" stroke-width="2.5" stroke-dasharray="2 4"/>
+      <text x="768" y="47" class="t" style="fill:var(--s1)">A: spot</text>
+      <text x="768" y="64" class="t" style="fill:var(--s2)">B: clamped</text>
+      <text x="768" y="88" class="t" style="fill:var(--s7)">C: capped</text>
+      <text x="40" y="150" text-anchor="middle" transform="rotate(-90 40 150)">floating price settled</text>
+     </svg>
+     <figcaption>The floating price each approach settles against, for a given spot price (floor $0, cap $600 shown). Above the cap, B and C stop the generator paying more; below zero, B pays the floor and C removes the volume altogether.</figcaption>
+    </figure>
     <p>Each approach can be settled against either trace. The UIGF trace differs from sent-out only in negative-price intervals, which approach C knocks out, so it cannot change C.</p>
     <div class="fx">merchant = farm sent-out × max(spot, 0) × 5/60 &nbsp;&nbsp;·&nbsp;&nbsp; net revenue = merchant + settlement</div>
+    <div class="fx">weekly net<sub>w</sub> = Σ<sub>t∈w</sub> [ G<sub>t</sub> · max(P<sub>t</sub>, 0) + CF<sub>t</sub> · Q · v<sub>t</sub> · (K − F(P<sub>t</sub>)) ] × 5/60</div>
+    <p>G is the farm's sent-out, CF the reference trace, F(P) the floating price above, and v the volume factor (1, or 0 when spot is negative under approach C).</p>
     <p>Merchant revenue is floored at zero on the assumption that the farm does not generate into negative prices.</p>
 
     <h3 id="g-bulk-vis">Reference Trace Analysis tab <button class="go" data-goto="bulk:farm">open</button></h3>
@@ -384,7 +444,27 @@ td.l{text-align:left;font-family:var(--f-ui)}
      <li><b>Residual demand</b> = predispatch total demand − predispatch semi-scheduled solar and wind UIGF: the demand that dispatchable plant has to meet.</li>
      <li><b>Realised spread</b> = average spot price over the high block − average spot price over the low block, both measured in half-hours.</li>
     </ul>
-    <div class="fx">settlement to holder = Q (MW) × block duration (h) × (strike spread − realised spread), per day</div>
+    <figure>
+     <svg class="dg" viewBox="0 0 900 326" role="img" aria-label="A shaping day: residual demand, the charge and discharge blocks, and the nomination time">
+      <text x="476" y="20" text-anchor="middle" class="t" style="fill:var(--s1)">low block L · charge</text>
+      <text x="693" y="20" text-anchor="middle" class="t" style="fill:var(--neg)">high block H · discharge</text>
+      <g transform="translate(0,26)">
+      <rect x="410" y="8" width="133" height="192" fill="var(--s1)" opacity=".16"/><rect x="627" y="8" width="133" height="192" fill="var(--neg)" opacity=".16"/>
+      <line class="ax" x1="60" x2="860" y1="200" y2="200"/>
+      <polyline fill="none" stroke="var(--s3)" stroke-width="2.5" points="68.3,113.5 85.0,113.3 101.7,112.9 118.3,112.4 135.0,111.7 151.7,110.8 168.3,109.8 185.0,108.6 201.7,107.1 218.3,105.1 235.0,102.0 251.7,97.4 268.3,91.3 285.0,85.3 301.7,82.2 318.3,84.3 335.0,92.1 351.7,104.2 368.3,118.4 385.0,133.2 401.7,148.0 418.3,162.2 435.0,174.9 451.7,184.5 468.3,189.8 485.0,190.0 501.7,185.0 518.3,175.6 535.0,163.1 551.7,148.9 568.3,134.0 585.0,118.7 601.7,102.8 618.3,86.3 635.0,69.7 651.7,54.8 668.3,44.0 685.0,40.0 701.7,43.6 718.3,53.7 735.0,67.4 751.7,81.5 768.3,93.4 785.0,102.1 801.7,107.7 818.3,110.9 835.0,112.5 851.7,113.2"/>
+      <text x="76" y="150" style="fill:var(--s3)" class="t">predispatch residual demand</text>
+      <text x="60" y="218" class="m">00:00</text><text x="260" y="218" text-anchor="middle" class="m">06:00</text><text x="460" y="218" text-anchor="middle" class="m">12:00</text><text x="660" y="218" text-anchor="middle" class="m">18:00</text><text x="860" y="218" text-anchor="end" class="m">24:00</text>
+      <text x="460" y="236" text-anchor="middle">shaping day D (start to end)</text>
+      <line x1="60" x2="860" y1="256" y2="256" class="gr"/>
+      <circle cx="72" cy="256" r="6" fill="var(--amber)"/><text x="86" y="261" class="m">D-1 16:00: nomination run fixes H and L from predispatch</text>
+      <text x="860" y="290" text-anchor="end" class="m">after day D: realised spread = mean spot over H − mean spot over L</text>
+      </g>
+     </svg>
+     <figcaption>Illustrative day with 4-hour blocks in one window each. The blocks are fixed at nomination from the forecast; the settlement uses actual spot prices over those same half-hours.</figcaption>
+    </figure>
+    <div class="fx">spread<sub>d</sub> = (1/|H<sub>d</sub>|) Σ<sub>t∈H<sub>d</sub></sub> P<sub>t</sub> − (1/|L<sub>d</sub>|) Σ<sub>t∈L<sub>d</sub></sub> P<sub>t</sub></div>
+    <div class="fx">settlement to holder<sub>d</sub> = Q (MW) × duration (h) × (K<sub>p(d)</sub> − spread<sub>d</sub>)</div>
+    <p>P is the half-hour spot price, H and L the high and low block half-hours, and K<sub>p(d)</sub> the strike spread for the period containing day d: one value, or a value per year, quarter or month (<b>Strike set by</b>; periods left blank use the default strike).</p>
     <p>The holder is <b>short the spread</b>: it receives the fixed strike and pays the realised spread, so it gains on days when the realised spread comes in below the strike.</p>
 
     <h3 id="g-blocks">Choosing the blocks</h3>
@@ -393,19 +473,35 @@ td.l{text-align:left;font-family:var(--f-ui)}
      <li><b>Duration.</b> Each block totals the shaping duration (1, 2, 4, 6 or 8 hours).</li>
      <li><b>Windows.</b> Each block may be split into at most the maximum number of contiguous windows, each at least the minimum window long. One window of 4 hours is a single evening peak; two windows of at least 1 hour can capture a morning and an evening peak.</li>
      <li><b>Selection.</b> The high block is the feasible set with the highest total residual demand, found exactly. The low block is then the feasible set with the lowest total from the half-hours left, so the two never overlap; either may come first in the day.</li>
+     <li><b>Alternation across days</b> (toggle). Without it, each day is blocked on its own, so day D can end with a discharge window and day D+1 start with another. With it on, a day whose first window would repeat the type of the previous settled day's last window is re-blocked: the feasible pair with the widest high-minus-low total that starts with the other type (found exactly). The <b>same-type starts</b> metric counts these repeats; with alternation on it is zero unless no alternating pair exists.</li>
      <li><b>Comparison bases.</b> The same rule is applied to the predispatch price at nomination (an alternative contract design) and to the actual spot price (perfect foresight: the best spread achievable with these block rules).</li>
     </ul>
+    <figure>
+     <svg class="dg" viewBox="0 0 900 170" role="img" aria-label="Alternation of charge and discharge across consecutive shaping days">
+      <text x="20" y="40" class="t">Off</text>
+      <rect x="90" y="24" width="90" height="24" rx="4" fill="var(--s1)" opacity=".85"/><rect x="240" y="24" width="90" height="24" rx="4" fill="var(--neg)" opacity=".85"/>
+      <line x1="400" x2="400" y1="14" y2="150" class="gr" stroke-dasharray="4 3"/>
+      <rect x="430" y="24" width="90" height="24" rx="4" fill="var(--neg)" opacity=".85"/><rect x="600" y="24" width="90" height="24" rx="4" fill="var(--s1)" opacity=".85"/>
+      <text x="335" y="70" class="m" style="fill:var(--neg)">discharge → discharge: a same-type start</text>
+      <text x="20" y="114" class="t">On</text>
+      <rect x="90" y="98" width="90" height="24" rx="4" fill="var(--s1)" opacity=".85"/><rect x="240" y="98" width="90" height="24" rx="4" fill="var(--neg)" opacity=".85"/>
+      <rect x="430" y="98" width="90" height="24" rx="4" fill="var(--s1)" opacity=".85"/><rect x="600" y="98" width="90" height="24" rx="4" fill="var(--neg)" opacity=".85"/>
+      <text x="200" y="160" text-anchor="middle" class="m">day D</text><text x="560" y="160" text-anchor="middle" class="m">day D+1</text>
+      <text x="720" y="40" class="m">blue = charge (low)</text><text x="720" y="114" class="m">red = discharge (high)</text>
+     </svg>
+     <figcaption>With alternation on, a day may not start with the same block type the previous day ended with, as a storage asset could not discharge twice without charging in between.</figcaption>
+    </figure>
     <div class="callout">A day settles only if the nomination run, the residual demand and the spot price cover every half-hour of the shaping day. Predispatch runs before about 12:30 only reach 04:00 on the shaping day, so early nomination times leave most days unsettled; the tiles say how many days were skipped and why.</div>
 
     <h3 id="g-shape-vis">Visuals and metrics</h3>
     <table>
      <tbody>
-      <tr><td>Headline tiles</td><td>Days settled (and why any were skipped); the mean realised spread of the contract's blocks; total settlement to the holder; the share of days the holder was paid; and capture of perfect foresight.</td></tr>
-      <tr><td>Block selection basis</td><td>One row per basis. <b>Forecast spread</b> is the predispatch price spread over the chosen blocks at nomination: what the market expected. <b>Realised spread</b> is the spot spread over the same blocks. <b>Capture of PF</b> = Σ realised ÷ Σ perfect-foresight spread. <b>High / low overlap</b> is the share of the contract's high and low half-hours that the other basis also picks. <b>Days below strike</b> is the share of days the holder is paid.</td></tr>
-      <tr><td>Spot, predispatch and residual demand</td><td>One week of half-hours: spot, the nominated predispatch price, and residual demand (right axis), with the high (red) and low (blue) blocks shaded for the chosen basis. Step through weeks with the arrows or pick a date.</td></tr>
-      <tr><td>When the blocks fall</td><td>For each half-hour of the day, the share of settled days it falls in the high block (solid) or low block (dashed), by basis. Where the residual-demand line departs from the perfect-foresight line, the contract's blocks systematically miss where the spread actually is.</td></tr>
+      <tr><td>Headline tiles</td><td>Days settled (and why any were skipped); the mean realised spread of the contract's blocks; total settlement to the holder; the share of days the holder was paid; capture of perfect foresight; and same-type starts across consecutive days (with the number of days re-blocked when alternation is on).</td></tr>
+      <tr><td>Block selection basis</td><td>One row per basis. <b>Realised spread</b> is the spot spread over the chosen blocks. <b>Capture of PF</b> = Σ realised ÷ Σ perfect-foresight spread. <b>High / low overlap</b> is the share of the contract's high and low half-hours that the other basis also picks. <b>Days below strike</b> is the share of days the holder is paid. <b>Same-type starts</b> counts consecutive settled days where the day starts with the same block type the previous day ended with.</td></tr>
+      <tr><td>Spot, predispatch and residual demand</td><td>One week of half-hours: spot, the nominated predispatch price, and residual demand (right axis). Select one or more bases: each gets a lane above the chart (RD, PD, PF) showing its discharge (red) and charge (blue) windows, so the alignment between bases reads vertically. Full-height shading marks the half-hours where every selected basis agrees. Step through weeks with the arrows or pick a date.</td></tr>
+      <tr><td>When the blocks fall: charging / discharging</td><td>Side by side: for each half-hour of the day, the share of settled days it falls in the charge (low) block and in the discharge (high) block, by basis. Where the residual-demand line departs from the perfect-foresight line, the contract's blocks systematically miss where the spread actually is.</td></tr>
       <tr><td>Cumulative and monthly settlement</td><td>Running total of settlement to the holder for the contract, for blocks chosen on predispatch price, and for perfect foresight × the capture %; then the contract's settlement by month.</td></tr>
-      <tr><td>Contract against perfect foresight</td><td>30-day rolling mean of realised spreads on each basis, against the strike and the derated perfect-foresight spread. The gap between the contract and perfect foresight is the cost of fixing the blocks from a day-ahead residual-demand forecast.</td></tr>
+      <tr><td>Contract against perfect foresight</td><td>30-day rolling mean of realised spreads on each basis, against the strike (stepped when set by period) and the derated perfect-foresight spread. The gap between the contract and perfect foresight is the cost of fixing the blocks from a day-ahead residual-demand forecast.</td></tr>
       <tr><td>Distribution of daily spreads</td><td>Box plots of the daily realised spread on each basis (box P25–P75, whiskers P10–P90, circles the lowest and highest day), against the strike.</td></tr>
      </tbody>
     </table>
