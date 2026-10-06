@@ -153,7 +153,7 @@ function wire() {
   q.onkeydown = e => { if (e.key === "Enter") { const li = list.querySelector("li[data-id]"); if (li) { list.hidden = true; q.blur(); selectUnit(li.dataset.id); } } };
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => render());
   new MutationObserver(() => render()).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-  let rt; new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => { if (S.tab === "farm") sizePlots(); else render(); }, 150); }).observe(document.querySelector(".wrap"));
+  let rt; new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => { if (TOP === "shape") { if (window.shResize) shResize(); } else if (S.tab === "farm") sizePlots(); else render(); }, 150); }).observe(document.querySelector(".wrap"));
 }
 function render() {
   renderUnitBar();
@@ -354,7 +354,7 @@ const RISK = {
   cvar: { label: "CVaR 10%", col: "CVaR 10%", tail: s => cvar(s, 0.1), desc: "EaR = mean week − CVaR 10% (average of the worst 10% of weeks)" },
   param: { label: "Parametric", col: "μ − 1.28σ", tail: s => mean(s) - Z10 * sd(s), desc: "EaR = 1.28 × weekly SD (normal approximation of the 10th percentile)" } };
 const riskTail = s => RISK[S.risk].tail(s);
-function lineChart(el, { xs, series, yfmt, w = 600, h = 240, title, xlab }) {
+function lineChart(el, { xs, series, yfmt, w = 600, h = 240, title, xlab, daily = false }) {
   const L = 76, Rr = 136, T = 12, B = 30, ph = h - T - B;
   series.forEach(s => { s.vals = Array.from(s.vals); });
   const all = series.flatMap(s => s.vals).filter(v => v != null && isFinite(v));
@@ -366,9 +366,9 @@ function lineChart(el, { xs, series, yfmt, w = 600, h = 240, title, xlab }) {
   if (lo < 0) g += `<line x1="${L}" x2="${w - Rr}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--ink-3)"/>`;
   // label each year at its first week that starts in January, at least 36 px after the previous label
   let lastX = -1e9, lastY = "";
-  const mid = d => new Date(Date.parse(d) + 3 * 864e5).toISOString().slice(0, 10);   // a week belongs to the year of its Wednesday
+  const mid = d => daily ? d : new Date(Date.parse(d) + 3 * 864e5).toISOString().slice(0, 10);   // a week belongs to the year of its Wednesday
   xs.forEach((d0, i) => { const d = mid(d0), y = d.slice(0, 4); if (y !== lastY && (d.slice(5, 7) === "01" || i === 0)) { lastY = y; if (X(i) - lastX >= 36) { g += `<text x="${X(i)}" y="${h - 8}" font-size="12.5" fill="var(--ink-3)">${y}</text><line x1="${X(i)}" x2="${X(i)}" y1="${T + ph}" y2="${T + ph + 4}" stroke="var(--rule)"/>`; lastX = X(i); } } });
-  if (n > 0 && n <= 60) { const mi = []; xs.forEach((d, i) => { if (mid(d).slice(8, 10) <= "07" && i > 0) mi.push(i); }); mi.forEach(i => { if (X(i) - lastX >= 30) { g += `<text x="${X(i)}" y="${h - 8}" font-size="12.5" fill="var(--ink-3)">${MONTHS[+mid(xs[i]).slice(5, 7) - 1]}</text>`; lastX = X(i); } }); }
+  if (n > 0 && (n <= 60 || daily)) { const mi = []; xs.forEach((d, i) => { if ((daily ? mid(d).slice(8, 10) === "01" : mid(d).slice(8, 10) <= "07") && i > 0) mi.push(i); }); mi.forEach(i => { if (X(i) - lastX >= 30) { g += `<text x="${X(i)}" y="${h - 8}" font-size="12.5" fill="var(--ink-3)">${MONTHS[+mid(xs[i]).slice(5, 7) - 1]}</text>`; lastX = X(i); } }); }
   const ends = [];
   series.forEach(s => {
     let dd = "", pen = false; s.vals.forEach((v, i) => { if (v == null || !isFinite(v)) { pen = false; return; } dd += (pen ? "L" : "M") + X(i).toFixed(1) + "," + Y(v).toFixed(1); pen = true; });
@@ -409,7 +409,7 @@ async function renderSettle() {
   let E; try { E = await loadUnit(); } catch (e) { $("stkpi").innerHTML = `<span class="err">${e.message}</span>`; return; }
   if (tok !== exToken) return; EX = E;
   const u = E.u;
-  $("bdesc").textContent = `Floating limited to ${money(S.floor, 0)} – ${money(S.cap, 0)}`;
+  $("bdesc").textContent = `Floating clamped to ${money(S.floor, 0)} – ${money(S.cap, 0)}`;
   $("cdesc").textContent = `Floating capped at ${money(S.cap, 0)}; quantity 0 when price < $0`;
   const R = settle(E, S);
   const full = []; for (let w = 0; w < R.nW; w++) if (R.nint[w] >= 0.9 * 2016 && R.ok[w] >= 0.9 * 2016) full.push(w);
@@ -621,7 +621,8 @@ const toCsv = (head, rows) => [head.join(","), ...rows.map(r => r.map(csvCell).j
 const saveCsv = (name, head, rows) => save(new Blob([toCsv(head, rows)], { type: "text/csv" }), name + ".csv");
 const slug = t => String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 const period = () => S.y0 === S.y1 ? `${S.y0}` : `${S.y0}-${S.y1}`;
-const fileBase = key => `${S.tab === "fleet" ? S.ftech : S.unit}_${period()}_${key}`;
+let TOP = "bulk";   // top-level tab: "bulk" (energy contract) or "shape" (shaping contract, shaping.js)
+const fileBase = key => TOP === "shape" && window.shFileBase ? shFileBase(key) : `${S.tab === "fleet" ? S.ftech : S.unit}_${period()}_${key}`;
 const mtime = t => new Date((t + NEM_OFF) * 1000).toISOString().slice(0, 16).replace("T", " ");   // market time, interval ending
 // add a title block above an image and save as PNG
 function composePng(src, w, h, panel, name) {
