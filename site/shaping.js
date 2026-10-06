@@ -13,11 +13,21 @@ const shPeriod = () => SH.y0 === SH.y1 ? `${SH.y0}` : `${SH.y0}-${SH.y1}`;
 window.shFileBase = key => `${SH.region}_${shPeriod()}_${key}`;
 
 // top-level tabs
-document.querySelectorAll("nav.top button").forEach(b => b.onclick = () => {
-  TOP = b.dataset.top;
-  document.querySelectorAll("nav.top button").forEach(x => x.setAttribute("aria-selected", x === b));
-  $("bulk").hidden = TOP !== "bulk"; $("shape").hidden = TOP !== "shape"; $("bulkctl").hidden = TOP !== "bulk";
-  if (TOP === "shape") shOpen(); else if (META) { $("dsinfo").textContent = DSINFO || $("dsinfo").textContent; render(); }
+function setTop(top) {
+  TOP = top;
+  document.querySelectorAll("nav.top button").forEach(x => x.setAttribute("aria-selected", x.dataset.top === top));
+  for (const id of ["bulk", "shape", "guide"]) $(id).hidden = id !== top;
+  $("bulkctl").hidden = top !== "bulk";
+  if (DSINFO != null && top !== "shape") $("dsinfo").textContent = DSINFO;
+  if (top === "shape") shOpen(); else if (top === "bulk" && META) render();
+}
+document.querySelectorAll("nav.top button").forEach(b => b.onclick = () => setTop(b.dataset.top));
+// guide links: data-goto="bulk:settle" opens a top-level tab (and a bulk sub-tab)
+document.querySelectorAll("[data-goto]").forEach(b => b.onclick = () => {
+  const [top, sub] = b.dataset.goto.split(":");
+  setTop(top);
+  if (sub) document.querySelector(`nav.tabs button[data-tab="${sub}"]`)?.click();
+  window.scrollTo({ top: 0 });
 });
 
 const waitMeta = () => new Promise(ok => { const f = () => META ? ok() : setTimeout(f, 50); f(); });

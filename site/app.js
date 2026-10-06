@@ -153,7 +153,7 @@ function wire() {
   q.onkeydown = e => { if (e.key === "Enter") { const li = list.querySelector("li[data-id]"); if (li) { list.hidden = true; q.blur(); selectUnit(li.dataset.id); } } };
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => render());
   new MutationObserver(() => render()).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-  let rt; new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => { if (TOP === "shape") { if (window.shResize) shResize(); } else if (S.tab === "farm") sizePlots(); else render(); }, 150); }).observe(document.querySelector(".wrap"));
+  let rt; new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => { if (TOP === "guide") return; if (TOP === "shape") { if (window.shResize) shResize(); } else if (S.tab === "farm") sizePlots(); else render(); }, 150); }).observe(document.querySelector(".wrap"));
 }
 function render() {
   renderUnitBar();

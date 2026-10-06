@@ -35,16 +35,40 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.5 var(--f-ui);
 header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--hdr);border-bottom:3px solid var(--amber)}
 header.bar label.f>span{color:var(--hdr-ink-2)}
 .bar-in{max-width:1920px;margin:0 auto;padding-inline:28px;padding-block:10px;display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
-.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto;min-width:0}
+.head-l{display:flex;flex-direction:column;gap:4px;margin-right:auto;min-width:0}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0;flex-wrap:wrap}
 .brand b{font-weight:700;font-size:20px;letter-spacing:-.01em;color:var(--hdr-ink)}
 .brand span{font-size:13.5px;color:var(--hdr-ink-2)}
 .ctl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
-#bulkctl[hidden],#bulk[hidden],#shape[hidden]{display:none!important}
-nav.top{display:flex;gap:4px;align-self:stretch;margin:-10px 0 -13px}
-nav.top button{font:600 14.5px var(--f-ui);color:var(--hdr-ink-2);background:none;border:0;border-bottom:3px solid transparent;padding:0 14px;cursor:pointer}
+#bulkctl[hidden],#bulk[hidden],#shape[hidden],#guide[hidden]{display:none!important}
+nav.top{display:flex;flex-wrap:wrap;gap:2px 22px;margin:0 0 -13px}
+nav.top button{font:600 14.5px var(--f-ui);color:var(--hdr-ink-2);background:none;border:0;border-bottom:3px solid transparent;padding:6px 0 9px;cursor:pointer}
 nav.top button[aria-selected="true"]{color:var(--hdr-ink);border-bottom-color:var(--amber)}
 nav.top button:hover{color:var(--hdr-ink)}
 .contract select{width:100%;box-sizing:border-box}
+.guide{display:grid;gap:28px;grid-template-columns:minmax(0,1fr);margin-top:22px}
+@media (min-width:1100px){.guide{grid-template-columns:250px minmax(0,920px)}}
+.guide nav.toc{position:sticky;top:120px;align-self:start;font-size:14px;display:flex;flex-direction:column;gap:2px}
+.guide nav.toc a{color:var(--ink-2);text-decoration:none;padding:3px 0 3px 10px;border-left:2px solid var(--rule)}
+.guide nav.toc a.sub{padding-left:22px;font-size:13.5px;color:var(--ink-3)}
+.guide nav.toc a:hover{color:var(--ink);border-left-color:var(--amber)}
+.guide article{line-height:1.62;color:var(--ink-2)}
+.guide article h2{font-size:24px;color:var(--ink);margin:40px 0 8px;letter-spacing:-.01em;scroll-margin-top:120px}
+.guide article h2:first-child{margin-top:0}
+.guide article h3{font-size:17.5px;color:var(--ink);margin:26px 0 6px;scroll-margin-top:120px}
+.guide article p{margin:8px 0}
+.guide article ul{margin:6px 0;padding-left:20px}
+.guide article li{margin:4px 0}
+.guide article b{color:var(--ink)}
+.guide .fx{font-family:var(--f-num);font-size:14px;background:var(--rule-2);border-radius:6px;padding:8px 12px;margin:10px 0;color:var(--ink);overflow-x:auto;white-space:nowrap}
+.guide table{border-collapse:collapse;width:100%;font-size:14.5px;margin:10px 0}
+.guide th,.guide td{text-align:left;vertical-align:top;padding:7px 10px;border-bottom:1px solid var(--rule);white-space:normal;font-family:var(--f-ui);position:static;cursor:auto}
+@media (max-width:640px){.guide table{display:block;overflow-x:auto}.guide td:first-child{white-space:normal!important;min-width:110px}.guide .fx{white-space:normal}}
+.guide th{background:none;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.guide td:first-child{color:var(--ink);font-weight:600;white-space:nowrap}
+.guide .go{font:inherit;font-size:13px;color:var(--navy-ink);background:none;border:1px solid var(--rule);border-radius:999px;padding:1px 10px;cursor:pointer;margin-left:6px;vertical-align:1px}
+.guide .go:hover{border-color:var(--navy-ink)}
+.guide .callout{border-left:3px solid var(--amber);background:var(--amber-soft);padding:8px 14px;border-radius:0 6px 6px 0;margin:12px 0;color:var(--ink)}
 .contract .full{grid-column:1/-1}
 .navday{display:inline-flex;gap:6px;align-items:center}
 .navday button{font:inherit;font-size:13px;color:var(--ink-2);background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:3px 9px;cursor:pointer}
@@ -104,7 +128,7 @@ svg text{font-family:var(--f-ui)} svg .num{font-family:var(--f-num)}
 .badge{font:500 10.5px var(--f-num);padding:1px 6px;border-radius:4px;background:var(--rule-2);color:var(--ink-2)}
 .err{color:var(--neg);font-size:13px}
 .loading{opacity:.55;transition:opacity .2s}
-@media (max-width:640px){header.bar{position:static}.bar-in{padding-inline:16px}.wrap{padding-inline:16px}.brand span{display:none}}
+@media (max-width:640px){nav.top{gap:2px 12px}nav.top button{font-size:13px}header.bar{position:static}.bar-in{padding-inline:16px}.wrap{padding-inline:16px}.brand span{display:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 .contract{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px;align-items:end}
@@ -141,8 +165,10 @@ td.l{text-align:left;font-family:var(--f-ui)}
 </head>
 <body>
 <header class="bar"><div class="bar-in">
-  <div class="brand"><b>ESEM Contract Design Analysis</b><span id="dsinfo">loading…</span></div>
-  <nav class="top" role="tablist" aria-label="Contract type"><button role="tab" data-top="bulk" aria-selected="true">Bulk Energy Contract</button><button role="tab" data-top="shape" aria-selected="false">Shaping Contract</button></nav>
+  <div class="head-l">
+    <div class="brand"><b>ESEM Contract Design Analysis</b><span id="dsinfo">loading…</span></div>
+    <nav class="top" role="tablist" aria-label="Section"><button role="tab" data-top="bulk" aria-selected="true">Bulk Energy Contract</button><button role="tab" data-top="shape" aria-selected="false">Shaping Contract</button><button role="tab" data-top="guide" aria-selected="false">Guide</button></nav>
+  </div>
   <div class="ctl" id="bulkctl">
     <div class="picker"><input type="search" id="unitq" placeholder="Choose a wind or solar farm…" autocomplete="off" aria-label="Choose a wind or solar farm" style="width:250px"><ul id="unitlist" hidden></ul></div>
     <label class="f"><span>From</span><select id="y0"></select></label>
@@ -266,6 +292,149 @@ td.l{text-align:left;font-family:var(--f-ui)}
     </div>
     <div class="panel"><h3>Contract against perfect foresight</h3><p class="sub" id="sh5s"></p><div id="sh5"></div></div>
     <div class="panel"><h3>Distribution of daily spreads</h3><p class="sub" id="sh6s"></p><div id="sh6"></div></div>
+  </div>
+ </div>
+ <div id="guide" hidden>
+  <div class="guide">
+   <nav class="toc" aria-label="Guide contents">
+    <a href="#g-about">About this tool</a>
+    <a href="#g-bulk">Bulk energy contract</a>
+    <a class="sub" href="#g-trace">Reference trace</a>
+    <a class="sub" href="#g-settle">Settlement and approaches</a>
+    <a class="sub" href="#g-bulk-vis">Reference Trace Analysis tab</a>
+    <a class="sub" href="#g-settle-vis">Settlement Analysis tab</a>
+    <a class="sub" href="#g-fleet-vis">Fleet Comparison tab</a>
+    <a href="#g-shape">Shaping contract</a>
+    <a class="sub" href="#g-shape-how">How it settles</a>
+    <a class="sub" href="#g-blocks">Choosing the blocks</a>
+    <a class="sub" href="#g-shape-vis">Visuals and metrics</a>
+    <a href="#g-metrics">Risk metrics</a>
+    <a href="#g-data">Data and conventions</a>
+   </nav>
+   <article>
+    <h2 id="g-about">About this tool</h2>
+    <p>This dashboard tests two contract designs against historical NEM data: a <b>bulk energy contract</b> that settles a wind or solar farm against a regional reference generation profile, and a <b>shaping contract</b> that settles the spread between high- and low-demand periods each day. Both are explored here as designs specified for this analysis; they are not a published term sheet.</p>
+    <p>Everything is computed in your browser from pre-built data files, so every input (fixed prices, quantities, caps, block rules) can be changed and the results update immediately. Every chart and table has <b>PNG</b> and <b>CSV</b> buttons; the CSV holds the numbers behind the visual at the current settings.</p>
+
+    <h2 id="g-bulk">Bulk energy contract <button class="go" data-goto="bulk:farm">open</button></h2>
+    <p>A fixed-for-floating swap whose volume follows a <b>regional reference trace</b> rather than the farm's own output. The farm keeps selling its actual output at spot (its merchant revenue); the contract then pays it the fixed price and charges it the floating price on the reference volume. Because the volume is regional, the farm keeps its own <b>basis risk</b>: weeks when it under- or over-performs its region, or captures a different price, are not hedged.</p>
+
+    <h3 id="g-trace">Reference trace</h3>
+    <ul>
+     <li><b>Basket.</b> Set each 1 January, per region and technology (wind, solar): semi-scheduled units registered by that date, not deregistered, and first generating on or before 1 July of the prior year, so every member has at least six months of operation. Capacity is fixed at its 1 January value.</li>
+     <li><b>Sent-out trace.</b> In each 5-minute interval, the sum of basket sent-out generation (SCADA, clamped to 0–capacity) ÷ the sum of basket capacity. A unit with missing data drops out of both numerator and denominator for that interval only.</li>
+     <li><b>UIGF-on-negative trace.</b> The same, except that in intervals with a negative regional price each unit's unconstrained forecast (UIGF) replaces its sent-out. It removes the volume lost to economic curtailment, so the contract volume no longer shrinks when prices go negative.</li>
+    </ul>
+    <p>Each farm's header shows the years its own unit was in its basket, and links to a CSV of every basket member with the dates used for the six-month rule.</p>
+
+    <h3 id="g-settle">Settlement and the three approaches</h3>
+    <div class="fx">settlement = trace CF × Q (MW) × (K − floating) × 5/60</div>
+    <p>Calculated per 5-minute interval and summed by billing week (Sunday–Saturday). K is the fixed price and Q the contract quantity in MW. A positive amount is paid to the generator. The approaches differ only in the floating price and in which intervals carry volume:</p>
+    <table>
+     <thead><tr><th>Approach</th><th>Floating price</th><th>Volume</th><th>Effect</th></tr></thead>
+     <tbody>
+      <tr><td>A · Exposed</td><td>Spot</td><td>Every interval</td><td>Full swap. The generator pays the spike above K on reference volume, and receives K − P (more than K) when prices are negative.</td></tr>
+      <tr><td>B · Cap + floor</td><td>Spot clamped to [floor, cap], default [$0, $600]</td><td>Every interval</td><td>Limits the generator's payment in spike intervals to the cap, and stops negative prices increasing its receipts above K − floor.</td></tr>
+      <tr><td>C · Cap + knockout</td><td>Spot capped at the cap</td><td>Zero when spot &lt; $0</td><td>Spikes capped as in B; negative-price intervals drop out of the contract entirely.</td></tr>
+     </tbody>
+    </table>
+    <p>Each approach can be settled against either trace. The UIGF trace differs from sent-out only in negative-price intervals, which approach C knocks out, so it cannot change C.</p>
+    <div class="fx">merchant = farm sent-out × max(spot, 0) × 5/60 &nbsp;&nbsp;·&nbsp;&nbsp; net revenue = merchant + settlement</div>
+    <p>Merchant revenue is floored at zero on the assumption that the farm does not generate into negative prices.</p>
+
+    <h3 id="g-bulk-vis">Reference Trace Analysis tab <button class="go" data-goto="bulk:farm">open</button></h3>
+    <table>
+     <tbody>
+      <tr><td>Regional price</td><td>5-minute settlement price. When zoomed out, each pixel shows the mean (line) and min–max (band) of the intervals it covers; drag to zoom into raw intervals.</td></tr>
+      <tr><td>Farm vs reference trace</td><td>The farm's sent-out against both reference traces, as capacity factor (or MW, with the traces scaled to the farm's capacity). Gaps between the farm and the trace are the basis the contract does not hedge.</td></tr>
+      <tr><td>Average output vs reference trace</td><td>Weekly or monthly average capacity factor of the farm and both traces, over intervals where both have data. Persistent gaps show whether the farm structurally out- or under-performs its regional basket.</td></tr>
+     </tbody>
+    </table>
+
+    <h3 id="g-settle-vis">Settlement Analysis tab <button class="go" data-goto="bulk:settle">open</button></h3>
+    <p>Inputs on the left: fixed price, quantity, cap and floor, and the trace used by each approach. All results use complete weeks for statistics: weeks with a price and farm SCADA in at least 90% of intervals. Partial weeks at the edges of the period count towards totals but not towards weekly statistics.</p>
+    <table>
+     <tbody>
+      <tr><td>Headline tiles</td><td>Farm output (GWh and capacity factor), merchant revenue, and net revenue under each approach on its selected trace, with $/MWh of farm output and the settlement component.</td></tr>
+      <tr><td>All approaches table</td><td>Every approach × trace combination, with merchant-only for reference. Contract GWh is the reference volume settled; net $/MWh and vs merchant $/MWh are per MWh of farm output. Weekly SD, downside SD, mean week, the tail measure and EaR describe the spread of weekly net revenue (see <a href="#g-metrics">risk metrics</a>). Worst week shows its date on hover. Highlighted rows are the selected trace per approach.</td></tr>
+      <tr><td>Cumulative net revenue</td><td>Running total of merchant + settlement per approach, by week. Diverging slopes show when each approach adds or removes revenue.</td></tr>
+      <tr><td>What moves settlement</td><td>A bridge from approach A to B and to C. Each step is the change in settlement from one rule alone: switching trace, the floor, the cap, and the negative-price knockout.</td></tr>
+      <tr><td>Distribution of weekly net revenue</td><td>Box plots of complete weeks: box P25–P75, line median, whiskers P10–P90, circles the worst and best week.</td></tr>
+      <tr><td>Weekly net revenue</td><td>Each complete week's net revenue by approach against merchant. The legend toggles series.</td></tr>
+      <tr><td>Mean vs earnings-at-risk</td><td>For contract volumes of 0–200% of the farm's capacity in 10% steps, mean weekly net revenue (y) against earnings-at-risk (x), one line per approach. 0% is merchant only; the filled marker is the current Q. Up and to the left is better. The leftmost point (the nose) is the volume with the least risk; along the curve, the slope is the extra mean earnings per unit of extra risk. Settlement is linear in Q, so each point scales a 1 MW settlement exactly.</td></tr>
+     </tbody>
+    </table>
+
+    <h3 id="g-fleet-vis">Fleet Comparison tab <button class="go" data-goto="bulk:fleet">open</button></h3>
+    <p>Every wind or solar farm in the chosen region, settled with a contract sized as a percentage of its own capacity. These use weekly components precomputed at the default $600 cap and $0 floor (any fixed price works, because settlement is linear in K).</p>
+    <table>
+     <tbody>
+      <tr><td>Net revenue by approach</td><td>Distribution across assets of net revenue per MWh of each asset's own output, merchant and each approach.</td></tr>
+      <tr><td>Downside volatility vs merchant</td><td>Downside SD of weekly net revenue ÷ downside SD of weekly merchant revenue − 1, across assets. Negative means the contract reduced downside volatility; positive means it added some, usually where an asset's output correlates poorly with its regional trace.</td></tr>
+      <tr><td>Assets table</td><td>The same figures per asset. Click a column to sort, or a row to open that farm.</td></tr>
+     </tbody>
+    </table>
+
+    <h2 id="g-shape">Shaping contract <button class="go" data-goto="shape">open</button></h2>
+    <p>A daily contract on the price spread between the hours of highest and lowest <b>residual demand</b>. It values the ability to move energy from low-demand to high-demand periods (the service storage or flexible load provides), and settles on that spread against a fixed strike.</p>
+
+    <h3 id="g-shape-how">How it settles</h3>
+    <ul>
+     <li><b>Nomination.</b> At the nomination time on the day before (D-1; default 16:00), the contract fixes the day's high and low blocks from that predispatch run.</li>
+     <li><b>Residual demand</b> = predispatch total demand − predispatch semi-scheduled solar and wind UIGF: the demand that dispatchable plant has to meet.</li>
+     <li><b>Realised spread</b> = average spot price over the high block − average spot price over the low block, both measured in half-hours.</li>
+    </ul>
+    <div class="fx">settlement to holder = Q (MW) × block duration (h) × (strike spread − realised spread), per day</div>
+    <p>The holder is <b>short the spread</b>: it receives the fixed strike and pays the realised spread, so it gains on days when the realised spread comes in below the strike.</p>
+
+    <h3 id="g-blocks">Choosing the blocks</h3>
+    <ul>
+     <li><b>Shaping day.</b> Blocks can only use half-hours between the shaping day start and end (market time; 28:00 is 04:00 the next morning, the end of the trading day).</li>
+     <li><b>Duration.</b> Each block totals the shaping duration (1, 2, 4, 6 or 8 hours).</li>
+     <li><b>Windows.</b> Each block may be split into at most the maximum number of contiguous windows, each at least the minimum window long. One window of 4 hours is a single evening peak; two windows of at least 1 hour can capture a morning and an evening peak.</li>
+     <li><b>Selection.</b> The high block is the feasible set with the highest total residual demand, found exactly. The low block is then the feasible set with the lowest total from the half-hours left, so the two never overlap; either may come first in the day.</li>
+     <li><b>Comparison bases.</b> The same rule is applied to the predispatch price at nomination (an alternative contract design) and to the actual spot price (perfect foresight: the best spread achievable with these block rules).</li>
+    </ul>
+    <div class="callout">A day settles only if the nomination run, the residual demand and the spot price cover every half-hour of the shaping day. Predispatch runs before about 12:30 only reach 04:00 on the shaping day, so early nomination times leave most days unsettled; the tiles say how many days were skipped and why.</div>
+
+    <h3 id="g-shape-vis">Visuals and metrics</h3>
+    <table>
+     <tbody>
+      <tr><td>Headline tiles</td><td>Days settled (and why any were skipped); the mean realised spread of the contract's blocks; total settlement to the holder; the share of days the holder was paid; and capture of perfect foresight.</td></tr>
+      <tr><td>Block selection basis</td><td>One row per basis. <b>Forecast spread</b> is the predispatch price spread over the chosen blocks at nomination: what the market expected. <b>Realised spread</b> is the spot spread over the same blocks. <b>Capture of PF</b> = Σ realised ÷ Σ perfect-foresight spread. <b>High / low overlap</b> is the share of the contract's high and low half-hours that the other basis also picks. <b>Days below strike</b> is the share of days the holder is paid.</td></tr>
+      <tr><td>Spot, predispatch and residual demand</td><td>One week of half-hours: spot, the nominated predispatch price, and residual demand (right axis), with the high (red) and low (blue) blocks shaded for the chosen basis. Step through weeks with the arrows or pick a date.</td></tr>
+      <tr><td>When the blocks fall</td><td>For each half-hour of the day, the share of settled days it falls in the high block (solid) or low block (dashed), by basis. Where the residual-demand line departs from the perfect-foresight line, the contract's blocks systematically miss where the spread actually is.</td></tr>
+      <tr><td>Cumulative and monthly settlement</td><td>Running total of settlement to the holder for the contract, for blocks chosen on predispatch price, and for perfect foresight × the capture %; then the contract's settlement by month.</td></tr>
+      <tr><td>Contract against perfect foresight</td><td>30-day rolling mean of realised spreads on each basis, against the strike and the derated perfect-foresight spread. The gap between the contract and perfect foresight is the cost of fixing the blocks from a day-ahead residual-demand forecast.</td></tr>
+      <tr><td>Distribution of daily spreads</td><td>Box plots of the daily realised spread on each basis (box P25–P75, whiskers P10–P90, circles the lowest and highest day), against the strike.</td></tr>
+     </tbody>
+    </table>
+    <p>The <b>perfect-foresight capture %</b> derates the perfect-foresight spread to a realistic benchmark, for example the share of the theoretical spread a storage operator typically achieves.</p>
+
+    <h2 id="g-metrics">Risk metrics</h2>
+    <p>All are computed over the complete weeks (bulk) or settled days (shaping) of the selected period.</p>
+    <table>
+     <tbody>
+      <tr><td>Weekly SD</td><td>Sample standard deviation of weekly net revenue. Counts upside and downside alike.</td></tr>
+      <tr><td>Downside SD</td><td>√ mean(min(x − mean, 0)²): only weeks below the mean contribute, so a few very good weeks don't count as risk.</td></tr>
+      <tr><td>P10</td><td>The 10th-percentile week: 10% of weeks fall below it. With about 50 weeks a year it sits between the 5th and 6th worst week, so it can jump as weeks re-rank.</td></tr>
+      <tr><td>CVaR 10%</td><td>The average of the worst 10% of weeks (fractionally weighted at the boundary). Smoother than P10 and sensitive to how bad the tail is, not just where it starts.</td></tr>
+      <tr><td>Parametric</td><td>Mean − 1.28 × SD: the 10th percentile if weekly revenue were normally distributed. Perfectly smooth, but it treats upside as risk and misses skew. It overstates risk when revenue is right-skewed (low contract volume) and understates it when a fat left tail appears (high volume under approach A).</td></tr>
+      <tr><td>Earnings-at-risk (EaR)</td><td>Mean week − the selected tail measure: how far a bad week falls short of a typical one. Choose the measure with the toggle on the table or the chart.</td></tr>
+     </tbody>
+    </table>
+
+    <h2 id="g-data">Data and conventions</h2>
+    <ul>
+     <li><b>Source.</b> AEMO NEMWeb: MMSDM monthly archive (dispatch, SCADA, prices, registration, all predispatch runs), with daily reports and the weekly predispatch archive for recent months. Rebuilt nightly.</li>
+     <li><b>Time.</b> Market time (AEST, UTC+10, no daylight saving). Values are labelled by interval ending.</li>
+     <li><b>Prices before 5-minute settlement</b> (1 October 2021) are the 30-minute trading price, applied to each of its six 5-minute intervals.</li>
+     <li><b>UIGF</b> is not published in older dispatch files; dispatch AVAILABILITY stands in where it is missing.</li>
+     <li><b>First generation</b> is the first interval with at least 1 MW of SCADA in the fetched history. Units already generating when the history starts use their registration date.</li>
+     <li><b>Billing week</b> is Sunday to Saturday in market time.</li>
+     <li>The footer shows the data source, the latest interval included and when the site was built. A demonstration build on synthetic data says so there.</li>
+    </ul>
+   </article>
   </div>
  </div>
   <p class="note" id="foot"></p>
