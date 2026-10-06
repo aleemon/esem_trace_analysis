@@ -167,7 +167,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
 <header class="bar"><div class="bar-in">
   <div class="head-l">
     <div class="brand"><b>ESEM Contract Design Analysis</b><span id="dsinfo">loading…</span></div>
-    <nav class="top" role="tablist" aria-label="Section"><button role="tab" data-top="bulk" aria-selected="true">Bulk Energy Contract</button><button role="tab" data-top="shape" aria-selected="false">Shaping Contract</button><button role="tab" data-top="guide" aria-selected="false">Guide</button></nav>
+    <nav class="top" role="tablist" aria-label="Section">><button role="tab" data-top="guide" aria-selected="false">Guide</button><button role="tab" data-top="bulk" aria-selected="true">Bulk Energy Contract</button><button role="tab" data-top="shape" aria-selected="false">Shaping Contract</button</nav>
   </div>
   <div class="ctl" id="bulkctl">
     <div class="picker"><input type="search" id="unitq" placeholder="Choose a wind or solar farm…" autocomplete="off" aria-label="Choose a wind or solar farm" style="width:250px"><ul id="unitlist" hidden></ul></div>
@@ -215,13 +215,13 @@ td.l{text-align:left;font-family:var(--f-ui)}
         <div class="appr">
           <div class="nm"><span class="tag a">A</span><b>Exposed</b><small>Floating = spot price</small></div>
           <div class="seg" role="group" aria-label="Trace for A"><button data-ap="a" data-tr="so" aria-pressed="true">Sent-out</button><button data-ap="a" data-tr="ug" aria-pressed="false">UIGF</button></div>
-          <div class="nm"><span class="tag b">B</span><b>Cap + floor</b><small id="bdesc">Floating clamped to $0 – $600</small></div>
+          <div class="nm"><span class="tag b">B</span><b>Cap + floor</b><small id="bdesc">Floating limited to $0 – $600</small></div>
           <div class="seg" role="group" aria-label="Trace for B"><button data-ap="b" data-tr="so" aria-pressed="false">Sent-out</button><button data-ap="b" data-tr="ug" aria-pressed="true">UIGF</button></div>
           <div class="nm"><span class="tag c">C</span><b>Cap + volume knockout</b><small id="cdesc">Floating capped at $600; quantity 0 when price &lt; 0</small></div>
           <div class="seg" role="group" aria-label="Trace for C"><button data-ap="c" data-tr="so" aria-pressed="true">Sent-out</button><button data-ap="c" data-tr="ug" aria-pressed="false">UIGF</button></div>
         </div>
-        <p class="note">The UIGF trace differs from sent-out only in negative-price intervals, so it cannot change approach C, where those intervals are knocked out.</p>
-        <p class="note">Merchant = farm sent-out × spot, floored at $0 when the price is negative.</p>
+        <p class="note">NB: The UIGF trace differs from sent-out only in negative-price intervals, so it cannot change approach C, where those intervals are knocked out.</p>
+        <p class="note">NB: Merchant = farm sent-out × spot, floored at $0 when the price is negative.</p>
       </div>
       <div class="stack">
         <div class="kpis" id="stkpi" style="margin:0"></div>
@@ -313,8 +313,8 @@ td.l{text-align:left;font-family:var(--f-ui)}
    </nav>
    <article>
     <h2 id="g-about">About this tool</h2>
-    <p>This dashboard tests two contract designs against historical NEM data: a <b>bulk energy contract</b> that settles a wind or solar farm against a regional reference generation profile, and a <b>shaping contract</b> that settles the spread between high- and low-demand periods each day. Both are explored here as designs specified for this analysis; they are not a published term sheet.</p>
-    <p>Everything is computed in your browser from pre-built data files, so every input (fixed prices, quantities, caps, block rules) can be changed and the results update immediately. Every chart and table has <b>PNG</b> and <b>CSV</b> buttons; the CSV holds the numbers behind the visual at the current settings.</p>
+    <p>This dashboard tests the proposed ESEM contract designs against historical NEM data: a <b>bulk energy contract</b> that settles a wind or solar farm against a regional reference generation profile, and a <b>shaping contract</b> that settles the spread between high- and low-demand periods each day.</p>
+    <p>Everything is computed in the browser from pre-built data files, so every input (fixed prices, quantities, caps, block rules) can be changed and the results update immediately. Every chart and table has <b>PNG</b> and <b>CSV</b> export buttons.</p>
 
     <h2 id="g-bulk">Bulk energy contract <button class="go" data-goto="bulk:farm">open</button></h2>
     <p>A fixed-for-floating swap whose volume follows a <b>regional reference trace</b> rather than the farm's own output. The farm keeps selling its actual output at spot (its merchant revenue); the contract then pays it the fixed price and charges it the floating price on the reference volume. Because the volume is regional, the farm keeps its own <b>basis risk</b>: weeks when it under- or over-performs its region, or captures a different price, are not hedged.</p>
