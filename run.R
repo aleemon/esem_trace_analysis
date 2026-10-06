@@ -6,11 +6,13 @@
 #   YEARS_BACK   reporting years, ending with the current year (default 5). History is fetched from one year
 #                earlier so first-generation dates (6-month basket rule) are known for the first reporting year.
 #   FORCE        "true" rebuilds every year
+#   SHAPE_START_YEAR first year of the shaping-contract tab (default 2021 for aemo; predispatch UIGF is needed for
+#                residual demand). Predispatch history is fetched from the December before.
 #   FETCH_MINUTES stop starting new month downloads after this many minutes (default 210), so a long backfill ends
 #                cleanly inside the job limit, saves what it has, and the next run carries on
 #   CACHE_DIR    default "cache"; SITE_DATA default "site/data"
 suppressPackageStartupMessages({ library(data.table); library(jsonlite) })
-for (f in c("R/wdb.R", "R/fetch_nem.R", "R/registry.R", "R/build.R", "R/synthetic.R")) source(f)
+for (f in c("R/wdb.R", "R/fetch_nem.R", "R/registry.R", "R/build.R", "R/synthetic.R", "R/shaping.R")) source(f)
 
 env <- function(k, d) { v <- Sys.getenv(k, ""); if (nzchar(v)) v else d }
 SOURCE <- tolower(env("DATA_SOURCE", "synthetic")); stopifnot(SOURCE %in% c("aemo", "synthetic"))
@@ -26,6 +28,10 @@ months <- CJ(y = (min(years) - 1L):max(years), m = 1:12)[as.Date(sprintf("%d-%02
 mkey <- function(y, m) sprintf("%d%02d", y, m)
 md5 <- function(x) { f <- tempfile(); saveRDS(x, f, compress = FALSE); on.exit(unlink(f)); unname(tools::md5sum(f)) }
 log_msg("source %s, reporting years %d-%d, history from %s", SOURCE, min(years), max(years), fetch_from)
+budget <- Sys.time() + 60 * as.numeric(env("FETCH_MINUTES", "210"))
+SHAPE_START <- as.integer(env("SHAPE_START_YEAR", if (SOURCE == "aemo") "2021" else as.character(min(years))))
+shp_years <- years[years >= SHAPE_START]
+PDC <- file.path(CACHE, "pd")
 
 # ---- register + month data ----
 if (SOURCE == "synthetic") {
@@ -43,12 +49,26 @@ if (SOURCE == "synthetic") {
   }
   if (!length(regm)) stop("no MMSDM registration tables could be fetched")
   reg <- build_registry(regm)
-  budget <- Sys.time() + 60 * as.numeric(env("FETCH_MINUTES", "210"))
   for (i in seq_len(nrow(months))) {
     k <- mkey(months$y[i], months$m[i]); f <- file.path(NEMC, paste0(k, ".rds"))
     if (Sys.time() > budget && !file.exists(f)) { note_fetch(months$y[i], months$m[i], "DEFERRED", "time budget reached; next run continues"); next }
     fetch_nem_month(months$y[i], months$m[i], reg$units$duid, NEMC, today)
   }
+}
+
+# ---- shaping contract: predispatch at the nomination runs (fetched, or generated for the demo) ----
+pmonths <- if (length(shp_years)) CJ(y = (min(shp_years) - 1L):max(shp_years), m = 1:12)[as.Date(sprintf("%d-%02d-01", y, m)) <= today - 1 & !(y < min(shp_years) & m < 12)] else data.table(y = integer(), m = integer())
+for (i in seq_len(nrow(pmonths))) {
+  yy <- pmonths$y[i]; mo <- pmonths$m[i]; f <- file.path(PDC, sprintf("%d%02d.rds", yy, mo))
+  if (SOURCE == "synthetic") {
+    src <- file.path(NEMC, sprintf("%d%02d.rds", yy, mo))
+    if (file.exists(src) && (!file.exists(f) || file.mtime(f) < file.mtime(src))) { log_msg("synthetic PD %d-%02d", yy, mo); synth_pd_month(yy, mo, NEMC, reg$units, CACHE) }
+    next
+  }
+  if (Sys.time() > budget && !file.exists(f)) { note_fetch(yy, mo, "DEFERRED", "time budget reached; next run continues", log = "pd"); next }
+  fetch_pd_month(yy, mo, CACHE, today)
+}
+if (SOURCE == "aemo") {
   # month-by-month fetch report: printed to the log and saved for the data release
   fr <- rbindlist(lapply(sort(ls(FETCH_LOG)), function(k) c(month = k, FETCH_LOG[[k]])))
   if (nrow(fr)) {
@@ -57,7 +77,7 @@ if (SOURCE == "synthetic") {
     if (nrow(bad)) for (j in seq_len(nrow(bad))) log_msg("  %s %s %s", bad$month[j], bad$src[j], bad$msg[j])
     dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
     writeLines(c("| month | source | note |", "| --- | --- | --- |", sprintf("| %s | %s | %s |", fr$month, fr$src, gsub("|", "/", fr$msg, fixed = TRUE))),
-               file.path(OUT, "fetch_report.md"))
+             file.path(OUT, "fetch_report.md"))
   }
 }
 units <- copy(reg$units); caph <- reg$caph
@@ -108,12 +128,33 @@ for (y in years) {
 }
 if (!length(derived)) stop("nothing built")
 
+# ---- shaping contract files ----
+shp <- list()
+for (y in shp_years) {
+  pk <- c(mkey(y - 1L, 12L), mkey(y, 1:12), mkey(y + 1L, 1L)); pf <- file.path(PDC, paste0(pk, ".rds")); pf <- pf[file.exists(pf)]
+  nk <- c(mkey(y, 1:12), mkey(y + 1L, 1L)); nf <- file.path(NEMC, paste0(nk, ".rds")); nf <- nf[file.exists(nf)]
+  if (!length(pf) || !length(nf)) next
+  sig <- md5(list(file.mtime(pf), file.mtime(nf), data_end = if (y == max(years)) data_end else NULL, code = readLines("R/shaping.R")))
+  dfile <- file.path(DER, sprintf("shp_%d.rds", y))
+  if (!FORCE && file.exists(dfile)) { d <- readRDS(dfile); if (identical(d$sig, sig) && all(file.exists(file.path(OUT, vapply(d$files, `[[`, "", "file"))))) { shp[[length(shp) + 1]] <- d; next } }
+  log_msg("build shaping %d", y)
+  d <- build_shaping_year(y, lapply(pf, readRDS), lapply(nf, readRDS), OUT, data_end)
+  gc(verbose = FALSE)
+  if (is.null(d)) next
+  d$sig <- sig; dir.create(DER, recursive = TRUE, showWarnings = FALSE); saveRDS(d, dfile)
+  shp[[length(shp) + 1]] <- d
+}
+shp_meta <- if (length(shp)) list(runs = I(SHP_RUNS), np = SHP_NP, years = I(vapply(shp, `[[`, 0, "year")),
+  regions = I(sort(unique(unlist(lapply(shp, function(d) names(d$files)))))),
+  files = setNames(lapply(shp, function(d) lapply(d$files, function(f) list(file = f$file, bytes = f$bytes, nd = f$nd, rd16 = f$rd16))), vapply(shp, function(d) as.character(d$year), ""))) else NULL
+
 # ---- assemble + copy ----
 n_weeks <- as.integer(ceiling((as.numeric(as.POSIXct(sprintf("%d-01-08", max(years) + 1), tz = "UTC")) - REF_SUN) / 604800))
 assemble(units, derived, OUT, n_weeks,
          list(source = SOURCE, generated = format(Sys.time(), "%Y-%m-%d %H:%M %Z", tz = "Australia/Sydney"),
-              data_end = format(as.POSIXct(data_end + NEM_OFF, origin = "1970-01-01", tz = "UTC"), "%Y-%m-%d %H:%M")), caph_all = caph)
+              data_end = format(as.POSIXct(data_end + NEM_OFF, origin = "1970-01-01", tz = "UTC"), "%Y-%m-%d %H:%M"), shaping = shp_meta), caph_all = caph)
 unlink(SITE, recursive = TRUE); dir.create(SITE, recursive = TRUE)
-keep <- c("meta.json", "settle.bin", if (file.exists(file.path(OUT, "baskets.csv"))) "baskets.csv", unlist(lapply(derived, function(d) c(vapply(d$files$idx, `[[`, "", "file"), vapply(d$files$unit, `[[`, "", "file")))))
+keep <- c("meta.json", "settle.bin", if (file.exists(file.path(OUT, "baskets.csv"))) "baskets.csv", unlist(lapply(derived, function(d) c(vapply(d$files$idx, `[[`, "", "file"), vapply(d$files$unit, `[[`, "", "file")))),
+          unlist(lapply(shp, function(d) vapply(d$files, `[[`, "", "file"))))
 for (f in keep) { dir.create(dirname(file.path(SITE, f)), recursive = TRUE, showWarnings = FALSE); file.copy(file.path(OUT, f), file.path(SITE, f), overwrite = TRUE) }
 log_msg("site/data: %d files, %.1f MB", length(keep), sum(file.size(file.path(SITE, keep))) / 1e6)
