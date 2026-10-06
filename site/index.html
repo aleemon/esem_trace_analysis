@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>ESEM Reference Trace Analysis</title>
+<title>ESEM Contract Design Analysis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -39,6 +39,17 @@ header.bar label.f>span{color:var(--hdr-ink-2)}
 .brand b{font-weight:700;font-size:20px;letter-spacing:-.01em;color:var(--hdr-ink)}
 .brand span{font-size:13.5px;color:var(--hdr-ink-2)}
 .ctl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+#bulkctl[hidden],#bulk[hidden],#shape[hidden]{display:none!important}
+nav.top{display:flex;gap:4px;align-self:stretch;margin:-10px 0 -13px}
+nav.top button{font:600 14.5px var(--f-ui);color:var(--hdr-ink-2);background:none;border:0;border-bottom:3px solid transparent;padding:0 14px;cursor:pointer}
+nav.top button[aria-selected="true"]{color:var(--hdr-ink);border-bottom-color:var(--amber)}
+nav.top button:hover{color:var(--hdr-ink)}
+.contract select{width:100%;box-sizing:border-box}
+.contract .full{grid-column:1/-1}
+.navday{display:inline-flex;gap:6px;align-items:center}
+.navday button{font:inherit;font-size:13px;color:var(--ink-2);background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:3px 9px;cursor:pointer}
+.shleg{display:inline-flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink-2)}
+.shleg i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
 label.f{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink-2)}
 label.f>span{text-transform:uppercase;letter-spacing:.06em;font-size:12px;font-weight:600;color:var(--ink-3)}
 select,input[type=number],input[type=search]{font:inherit;font-size:14.5px;color:var(--ink);background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:4px 8px}
@@ -130,8 +141,9 @@ td.l{text-align:left;font-family:var(--f-ui)}
 </head>
 <body>
 <header class="bar"><div class="bar-in">
-  <div class="brand"><b>ESEM Reference Trace Analysis</b><span id="dsinfo">loading…</span></div>
-  <div class="ctl">
+  <div class="brand"><b>ESEM Contract Design Analysis</b><span id="dsinfo">loading…</span></div>
+  <nav class="top" role="tablist" aria-label="Contract type"><button role="tab" data-top="bulk" aria-selected="true">Bulk Energy Contract</button><button role="tab" data-top="shape" aria-selected="false">Shaping Contract</button></nav>
+  <div class="ctl" id="bulkctl">
     <div class="picker"><input type="search" id="unitq" placeholder="Choose a wind or solar farm…" autocomplete="off" aria-label="Choose a wind or solar farm" style="width:250px"><ul id="unitlist" hidden></ul></div>
     <label class="f"><span>From</span><select id="y0"></select></label>
     <label class="f"><span>To</span><select id="y1"></select></label>
@@ -139,6 +151,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
 </div></header>
 
 <div class="wrap">
+ <div id="bulk">
   <nav class="tabs" role="tablist">
     <button role="tab" id="t-fa" aria-selected="true" data-tab="farm">Reference Trace Analysis</button>
     <button role="tab" id="t-st" aria-selected="false" data-tab="settle">Settlement Analysis</button>
@@ -212,10 +225,54 @@ td.l{text-align:left;font-family:var(--f-ui)}
     </div>
     <div class="panel" style="margin-top:14px"><h3>Assets</h3><p class="sub">Per-MW figures at the $600 cap and $0 floor · click a row to open the farm · weeks with more than 10% missing data are dropped</p><div class="tblwrap" id="fl3"></div></div>
   </section>
+ </div>
+ <div id="shape" hidden>
+  <div class="layout side" style="margin-top:18px">
+    <div class="panel">
+      <h3>Shaping contract</h3>
+      <p class="sub">Each day, the high block is the half-hours with the highest predispatch residual demand at the nomination run, and the low block the lowest. Settlement = quantity × block hours × (strike spread − realised spread), where realised spread = average spot in the high block − average spot in the low block. Positive = paid to the holder (short the spread).</p>
+      <div class="contract">
+        <label><span>Region</span><select id="sh-reg"></select></label>
+        <label><span>From</span><select id="sh-y0"></select></label>
+        <label><span>To</span><select id="sh-y1"></select></label>
+        <label class="full"><span>Shaping duration (hours per block)</span><div class="seg" role="group" aria-label="Shaping duration" id="sh-dur"><button data-v="1">1</button><button data-v="2">2</button><button data-v="4" aria-pressed="true">4</button><button data-v="6">6</button><button data-v="8">8</button></div></label>
+        <label><span>Minimum window</span><select id="sh-minw"></select></label>
+        <label><span>Maximum windows</span><select id="sh-maxw"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option></select></label>
+        <label><span>Nomination (D-1)</span><select id="sh-nom"></select></label>
+        <label><span>Shaping day start</span><select id="sh-start"></select></label>
+        <label><span>Shaping day end</span><select id="sh-end"></select></label>
+        <label><span>Quantity MW</span><input type="number" id="sh-q" value="100" min="0" step="10"></label>
+        <label><span>Strike spread $/MWh</span><input type="number" id="sh-k" value="100" step="5"></label>
+        <label><span>Perfect-foresight capture %</span><input type="number" id="sh-pf" value="85" min="0" max="100" step="5"></label>
+      </div>
+      <p class="note">Blocks are made of half-hours inside the shaping day (start to end, market time; 28:00 = 04:00 the next morning, the end of the trading day). Each block totals the shaping duration, split into at most the maximum number of windows, each at least the minimum window long. The high block is chosen first; the low block is then chosen from the remaining half-hours.</p>
+      <p class="note">A day is settled only if the nomination run, the residual demand and the spot price cover every half-hour of the shaping day. Predispatch runs before about 12:30 only reach 04:00 on the shaping day, so early nominations leave most days unsettled.</p>
+    </div>
+    <div class="stack">
+      <div class="kpis" id="shkpi" style="margin:0"></div>
+      <div class="panel"><h3>Block selection basis</h3><p class="sub" id="sh-tbls"></p><div class="tblwrap" id="sh-tbl" style="max-height:none"></div></div>
+    </div>
+  </div>
+  <div class="grid" style="margin-top:14px">
+    <div class="panel"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Spot price, predispatch price and residual demand, with shaping blocks</h3>
+      <span class="navday"><button id="sh-prev" title="Previous week">◀</button><input type="date" id="sh-day" aria-label="First day shown"><button id="sh-next" title="Next week">▶</button>
+      <span class="rl">Blocks from</span><div class="seg" role="group" aria-label="Blocks shown" id="sh-bb"><button data-v="rd" aria-pressed="true">Residual demand</button><button data-v="pd">PD price</button><button data-v="pf">Perfect foresight</button></div>
+      <select id="sh-pax" aria-label="Price axis"><option value="zoom" selected>−100 to 300</option><option value="mid">−1000 to 2000</option><option value="full">Full range</option></select></span></div>
+      <p class="sub" id="sh1s"></p><div id="sh1"></div><div class="shleg" id="sh1l"></div></div>
+    <div class="panel"><h3>When the blocks fall: residual demand vs predispatch price vs perfect foresight</h3><p class="sub" id="sh2s"></p><div id="sh2"></div></div>
+    <div class="grid g2">
+      <div class="panel"><h3>Cumulative settlement</h3><p class="sub" id="sh3s"></p><div id="sh3"></div></div>
+      <div class="panel"><h3>Monthly settlement</h3><p class="sub" id="sh4s"></p><div id="sh4"></div></div>
+    </div>
+    <div class="panel"><h3>Contract against perfect foresight</h3><p class="sub" id="sh5s"></p><div id="sh5"></div></div>
+    <div class="panel"><h3>Distribution of daily spreads</h3><p class="sub" id="sh6s"></p><div id="sh6"></div></div>
+  </div>
+ </div>
   <p class="note" id="foot"></p>
 </div>
 <div id="tip" hidden></div>
 <script src="vendor/uPlot.iife.min.js"></script>
 <script src="app.js"></script>
+<script src="shaping.js"></script>
 </body>
 </html>
