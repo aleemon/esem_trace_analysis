@@ -35,11 +35,18 @@ download <- function(url, dest) {
 # ---------- AEMO CSV reader ----------
 # table: record prefix after "I,"/"D,", e.g. "DISPATCH,UNIT_SCADA,". keep: required columns; opt: optional columns
 # (returned as NA when the file predates them). duids: optional whole-field filter.
-read_aemo <- function(zip, table, keep, duids = NULL, nested = FALSE, opt = character()) {
-  cat_cmd <- if (nested) {
+# table = NULL takes the first table in the file (MMSDM files hold one table each). cat_cmd overrides how the CSV text is
+# produced (e.g. selected members of a nested archive); zip is then only a label for messages.
+read_aemo <- function(zip, table, keep, duids = NULL, nested = FALSE, opt = character(), cat_cmd = NULL) {
+  if (is.null(cat_cmd)) cat_cmd <- if (nested) {
     sprintf("d=$(mktemp -d); unzip -q -o %s -d \"$d\"; for f in \"$d\"/*.zip; do unzip -p \"$f\"; done; rm -rf \"$d\"", shQuote(zip))
   } else sprintf("unzip -p %s", shQuote(zip))
   cat_cmd <- sprintf("{ %s; } | tr -d '\\r'", cat_cmd)   # older MMSDM (PUBLIC_DVD_) files are CRLF: the last column name would carry a \r
+  if (is.null(table)) {
+    h1 <- suppressWarnings(system(sprintf("{ %s; } | grep -m1 '^I,'", cat_cmd), intern = TRUE))
+    if (!length(h1)) return(NULL)
+    f <- strsplit(h1[1], ",", fixed = TRUE)[[1]]; table <- paste0(f[2], ",", f[3], ",")
+  }
   hdr <- suppressWarnings(system(sprintf("{ %s; } | grep -m1 -F %s", cat_cmd, shQuote(paste0("I,", table))), intern = TRUE))
   if (!length(hdr)) return(NULL)
   cols <- strsplit(hdr[1], ",", fixed = TRUE)[[1]]
@@ -157,7 +164,7 @@ fetch_day <- function(d, duids, tmp, cache_dir) {
 # daily-built months are rebuilt each run from cached days until MMSDM publishes the month.
 # Each call records an outcome in FETCH_LOG (month, source, note), printed and saved by run.R.
 FETCH_LOG <- new.env()
-note_fetch <- function(y, m, src, msg = "") assign(sprintf("%d-%02d", y, m), list(src = src, msg = msg), envir = FETCH_LOG)
+note_fetch <- function(y, m, src, msg = "", log = "nem") assign(sprintf("%s%d-%02d", if (log == "nem") "" else paste0(log, " "), y, m), list(src = src, msg = msg), envir = FETCH_LOG)
 fetch_nem_month <- function(y, m, duids, cache_dir, today = Sys.Date()) {
   f <- file.path(cache_dir, sprintf("%d%02d.rds", y, m))
   if (file.exists(f)) { x <- readRDS(f); if (isTRUE(x$complete) && all(duids %chin% x$duids)) { note_fetch(y, m, "cached"); return(x) } }
