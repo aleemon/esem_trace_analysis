@@ -11,5 +11,6 @@ man <- character()
 put <- function(src, name) { file.copy(src, file.path(out, name), overwrite = TRUE); man <<- c(man, paste(name, unname(tools::md5sum(src)), sep = "\t")) }
 for (f in Sys.glob(file.path(cache, "nem", "[0-9][0-9][0-9][0-9][0-9][0-9].rds"))) if (isTRUE(readRDS(f)$complete)) put(f, paste0("nem_", basename(f)))
 for (f in Sys.glob(file.path(cache, "registry", "*.rds"))) put(f, paste0("registry_", basename(f)))
+for (f in Sys.glob(file.path(cache, "pd", "[0-9][0-9][0-9][0-9][0-9][0-9].rds"))) if (isTRUE(readRDS(f)$complete)) put(f, paste0("pd_", basename(f)))
 writeLines(man, file.path(out, "manifest.tsv"))
 cat(sprintf("%d files staged in %s/ (%.0f MB)\n", length(man) + 1, out, sum(file.size(list.files(out, full.names = TRUE))) / 1e6))
