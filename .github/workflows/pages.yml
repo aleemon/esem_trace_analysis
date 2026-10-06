@@ -53,6 +53,7 @@ jobs:
       - name: Fetch and build
         env:
           START_YEAR: ${{ vars.START_YEAR || '' }}
+          SHAPE_START_YEAR: ${{ vars.SHAPE_START_YEAR || '' }}
           YEARS_BACK: ${{ vars.YEARS_BACK || '5' }}
           FORCE: ${{ inputs.force && 'true' || 'false' }}
         run: Rscript run.R
@@ -68,9 +69,9 @@ jobs:
           path: cache
           key: wid-${{ env.DATA_SOURCE }}-${{ github.run_id }}
 
-      - name: Cache-bust app.js
-        # browsers otherwise keep an old app.js against a new index.html for a while after each upload
-        run: sed -i "s|src=\"app.js\"|src=\"app.js?v=${GITHUB_SHA::8}\"|" site/index.html
+      - name: Cache-bust scripts
+        # browsers otherwise keep an old app.js / shaping.js against a new index.html for a while after each upload
+        run: sed -i -E "s#src=\"(app|shaping)\.js\"#src=\"\1.js?v=${GITHUB_SHA::8}\"#g" site/index.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
