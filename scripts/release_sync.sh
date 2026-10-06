@@ -5,8 +5,8 @@
 #   restore : download any release asset whose local file is missing (run after the Actions cache restore)
 #   publish : upload complete MMSDM months, registration months and benchmark.md that are new or changed
 #
-# Only immutable inputs are backed up: complete MMSDM months (cache/nem/YYYYMM.rds with complete = TRUE) and
-# registration months (cache/registry/YYYYMM.rds). Daily-built months and build outputs are cheap to recreate.
+# Only immutable inputs are backed up: complete MMSDM months (cache/nem/YYYYMM.rds with complete = TRUE), predispatch
+# months (cache/pd/YYYYMM.rds, complete = TRUE) and registration months (cache/registry/YYYYMM.rds). Daily-built months and build outputs are cheap to recreate.
 # Needs: gh (preinstalled on GitHub runners), GH_TOKEN with contents: write, GITHUB_REPOSITORY.
 set -euo pipefail
 MODE="${1:?usage: release_sync.sh restore|publish}"
@@ -20,6 +20,7 @@ asset_to_path() {   # nem_202401.rds -> cache/nem/202401.rds ; registry_202401.r
   case "$1" in
     nem_*.rds)      echo "$CACHE/nem/${1#nem_}" ;;
     registry_*.rds) echo "$CACHE/registry/${1#registry_}" ;;
+    pd_*.rds)       echo "$CACHE/pd/${1#pd_}" ;;
     *)              echo "" ;;
   esac
 }
@@ -52,6 +53,9 @@ Rscript --vanilla -e '
     x <- readRDS(f); if (isTRUE(x$complete)) out <- c(out, paste(f, paste0("nem_", basename(f)), sep = "\t"))
   }
   for (f in Sys.glob(file.path(cache, "registry", "*.rds"))) out <- c(out, paste(f, paste0("registry_", basename(f)), sep = "\t"))
+  for (f in Sys.glob(file.path(cache, "pd", "[0-9][0-9][0-9][0-9][0-9][0-9].rds"))) {
+    x <- readRDS(f); if (isTRUE(x$complete)) out <- c(out, paste(f, paste0("pd_", basename(f)), sep = "\t"))
+  }
   for (b in c("benchmark.md", "fetch_report.md")) { f <- file.path(cache, "out", b); if (file.exists(f)) out <- c(out, paste(f, b, sep = "\t")) }
   writeLines(out)' > "$tmp/local.tsv"
 : > "$tmp/new_manifest.tsv"; up=0

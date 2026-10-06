@@ -1,4 +1,4 @@
-# ESEM Reference Trace Analysis
+# ESEM Contract Design Analysis
 
 Static dashboard for testing a regional reference PPA (as proposed for the ESEM) against NEM wind and solar farms.
 Each farm's 5-min output is shown against a regional reference trace, and contract settlement is calculated three ways
@@ -11,9 +11,10 @@ R/fetch_nem.R             NEMWeb: MMSDM monthly archive, plus daily reports for 
 R/registry.R              wind and solar unit register from the MMSDM registration tables
 R/build.R                 reference traces, settlement components, merchant, file writers
 R/synthetic.R             synthetic NEM data in the same shape as the fetchers (demo build and tests)
+R/shaping.R               shaping contract: predispatch fetch (MMSDM PREDISP_ALL_DATA, weekly PredispatchIS archive), synthetic PD, files
 R/wdb.R                   WDB1 binary container (writer + reader)
 config/units_override.csv optional corrections to the register (duid, tech, cap_mw, name, exclude)
-site/                     index.html, app.js, vendor/uPlot; site/data is generated
+site/                     index.html, app.js (bulk energy contract), shaping.js (shaping contract), vendor/; site/data is generated
 tests/check_reference.R   independent recomputation of baskets, traces, settlement components and merchant
 .github/workflows/pages.yml
 ```
@@ -28,7 +29,7 @@ tests/check_reference.R   independent recomputation of baskets, traces, settleme
    workflow from the Actions tab. The first AEMO run downloads six years of MMSDM months (DISPATCHLOAD is about
    100 MB a month), so allow a couple of hours; nightly runs after that fetch new days and rebuild the current year.
 
-Optional repository variables: `START_YEAR` (first reporting year; default 2018 for `aemo`) and `YEARS_BACK` (used when `START_YEAR` is unset; default 5, which is what the synthetic demo uses). History is fetched from the year before the first reporting year. "Run workflow" has a **force** tick box.
+Optional repository variables: `SHAPE_START_YEAR` (first year of the shaping tab; default 2021 for `aemo`), `START_YEAR` (first reporting year; default 2018 for `aemo`) and `YEARS_BACK` (used when `START_YEAR` is unset; default 5, which is what the synthetic demo uses). History is fetched from the year before the first reporting year. "Run workflow" has a **force** tick box.
 
 Each run stops starting new month downloads after `FETCH_MINUTES` (default 210) so a long backfill finishes inside the
 job limit and saves its progress; the next run carries on. The log ends with a fetch report (`fetch report: cached …,
@@ -99,3 +100,32 @@ Rscript tests/check_reference.R 2024 SA1     # independent check of one region-y
 - The ESEM contract design is still being finalised; the basket and settlement rules here are the ones specified for
   this analysis, not a published term sheet.
 - Data is AEMO's; keep the source attribution shown in the page footer.
+
+## Shaping contract tab
+
+The page has two top-level tabs: **Bulk Energy Contract** (everything above) and **Shaping Contract**.
+
+**Data** (per region, per calendar day D, half-hours ending D 00:30 to D+1 04:00, i.e. to the end of trading day D):
+
+| Item | Source |
+| --- | --- |
+| Predispatch price | `PREDISPATCHPRICE.RRP` (intervention 0), MMSDM `PREDISP_ALL_DATA` (every run) |
+| Residual demand | `PREDISPATCHREGIONSUM`: `TOTALDEMAND − SS_SOLAR_UIGF − SS_WIND_UIGF` |
+| Nomination runs | the runs at 08:00, 09:00 … 20:00 on D-1, from `PREDISPATCHSEQNO` (YYYYMMDDPP, PP 01 = 04:30) |
+| Spot | mean of the 5-min regional price in each half-hour (the trading price before 5MS) |
+
+Months not yet in MMSDM come from the weekly `Reports/Archive/PredispatchIS_Reports` archive (about 290 MB a week;
+only the nomination-hour runs are extracted and kept). The current, unarchived week is not available until it is
+archived. Complete predispatch months are backed up to the data release as `pd_YYYYMM.rds`.
+
+**Blocks.** Within the shaping day (start to end), the high block is the set of half-hours totalling the shaping
+duration, in at most N contiguous windows each at least the minimum window long, with the highest residual demand at
+the nomination run; it is found exactly by dynamic programming. The low block is then chosen the same way, lowest
+residual demand, from the half-hours left. The same rule is applied to the predispatch price (comparison) and to the
+actual spot price (perfect foresight).
+
+**Settlement** per settled day = quantity (MW) × duration (h) × (strike spread − realised spread), where realised
+spread = mean spot over the high block − mean spot over the low block. Positive is paid to the holder (short the
+spread). The perfect-foresight benchmark settles against x% of the best achievable spread. A day is settled only if
+the nomination run, residual demand and spot cover every half-hour of the shaping day. Predispatch runs before about
+12:30 only reach 04:00 on D, so nominations at 08:00–12:00 settle (almost) no days unless the shaping day ends by 04:00.
