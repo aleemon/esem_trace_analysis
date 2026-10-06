@@ -124,8 +124,12 @@ the nomination run; it is found exactly by dynamic programming. The low block is
 residual demand, from the half-hours left. The same rule is applied to the predispatch price (comparison) and to the
 actual spot price (perfect foresight).
 
+**Alternation** (optional): the first window of a shaping day must be the opposite type (charge/discharge) to the last
+window of the previous settled day; days that would repeat are re-blocked to the widest-spread pair that alternates
+(exact search). The page always reports how many consecutive-day boundaries start with the same type.
+
 **Settlement** per settled day = quantity (MW) × duration (h) × (strike spread − realised spread), where realised
 spread = mean spot over the high block − mean spot over the low block. Positive is paid to the holder (short the
-spread). The perfect-foresight benchmark settles against x% of the best achievable spread. A day is settled only if
+spread). The strike can be one value or set per year, quarter or month. The perfect-foresight benchmark settles against x% of the best achievable spread. A day is settled only if
 the nomination run, residual demand and spot cover every half-hour of the shaping day. Predispatch runs before about
 12:30 only reach 04:00 on D, so nominations at 08:00–12:00 settle (almost) no days unless the shaping day ends by 04:00.
