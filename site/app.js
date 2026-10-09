@@ -96,11 +96,33 @@ async function boot() {
     for (const y of META.years) { $("y0").add(new Option(y, y)); $("y1").add(new Option(y, y)); }
     const full = META.years.length > 1 ? META.years.at(-2) : META.years.at(-1);   // latest complete year
     S.y0 = S.y1 = full; $("y0").value = S.y0; $("y1").value = S.y1;
+    yearSlider(document.querySelector('[data-y0="y0"]'));
     for (const r of META.regions) $("freg").add(new Option(r.id.replace("1", ""), r.id));
     const first = META.units.filter(x => x.tech === "wind").sort((a, b) => b.cap - a.cap)[0] || META.units[0];
     selectUnit(first.id, false);
     wire(); addDownloads(); render();
   } catch (e) { $("dsinfo").innerHTML = `<span class="err">Couldn't load data: ${e.message}</span>`; console.error(e); }
+}
+// Two-thumb year slider over a pair of (hidden) selects: dragging updates the label; releasing sets the select and
+// fires its change event, so the existing handlers do the work. Programmatic select changes are picked up via sync().
+function yearSlider(root) {
+  const s0 = $(root.dataset.y0), s1 = $(root.dataset.y1), lo = root.querySelector(".lo"), hi = root.querySelector(".hi");
+  const fill = root.querySelector(".yrs-f"), out = root.querySelector(".yrs-v"), box = root.querySelector(".yrs-s");
+  const yrs = [...s0.options].map(o => +o.value), n = yrs.length;
+  for (const r of [lo, hi]) { r.min = 0; r.max = Math.max(0, n - 1); r.step = 1; r.disabled = n < 2; }
+  box.querySelectorAll(".yrs-tk").forEach(e => e.remove());
+  if (n > 1 && n <= 12) yrs.forEach((y, i) => { const t = document.createElement("span"); t.className = "yrs-tk"; t.textContent = `'${String(y).slice(2)}`; t.style.left = `calc(8px + ${i / (n - 1)} * (100% - 16px))`; box.appendChild(t); });
+  const paint = () => { const a = +lo.value, b = +hi.value, pc = i => n > 1 ? i / (n - 1) : 0;
+    fill.style.left = `calc(8px + ${pc(a)} * (100% - 16px))`; fill.style.width = `calc(${pc(b) - pc(a)} * (100% - 16px))`;
+    out.textContent = a === b ? `${yrs[a]}` : `${yrs[a]} – ${yrs[b]}`;
+    lo.style.zIndex = a > n / 2 ? 3 : 2; hi.style.zIndex = a > n / 2 ? 2 : 3; };
+  const sync = () => { lo.value = Math.max(0, yrs.indexOf(+s0.value)); hi.value = Math.max(0, yrs.indexOf(+s1.value)); paint(); };
+  lo.oninput = () => { if (+lo.value > +hi.value) lo.value = hi.value; paint(); };
+  hi.oninput = () => { if (+hi.value < +lo.value) hi.value = lo.value; paint(); };
+  const commit = (sel, r) => { const v = String(yrs[+r.value]); if (sel.value !== v) { sel.value = v; sel.dispatchEvent(new Event("change")); } setTimeout(sync, 0); };
+  lo.onchange = () => commit(s0, lo); hi.onchange = () => commit(s1, hi);
+  s0.addEventListener("change", () => setTimeout(sync, 0)); s1.addEventListener("change", () => setTimeout(sync, 0));
+  root.sync = sync; sync();
 }
 function selectUnit(id, rerender = true) {
   S.unit = id; const u = UNIT.get(id);
