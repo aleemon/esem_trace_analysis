@@ -51,6 +51,7 @@ function shInit(M) {
   for (const y of M.years) { $("sh-y0").add(new Option(y, y)); $("sh-y1").add(new Option(y, y)); }
   SH.region = M.regions.includes("NSW1") ? "NSW1" : M.regions[0]; $("sh-reg").value = SH.region;
   SH.y0 = SH.y1 = M.years.length > 1 ? M.years.at(-2) : M.years.at(-1); $("sh-y0").value = SH.y0; $("sh-y1").value = SH.y1;
+  yearSlider(document.querySelector('[data-y0="sh-y0"]'));
   for (let h = 8; h <= 20; h++) $("sh-nom").add(new Option(`${String(h).padStart(2, "0")}:00`, h));
   $("sh-nom").value = SH.nom;
   for (let p = 0; p <= 24; p++) $("sh-start").add(new Option(hhmm(p), p));

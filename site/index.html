@@ -39,6 +39,30 @@ header.bar label.f>span{color:var(--hdr-ink-2)}
 .brand{display:flex;align-items:baseline;gap:10px;min-width:0;flex-wrap:wrap}
 .brand b{font-weight:700;font-size:20px;letter-spacing:-.01em;color:var(--hdr-ink)}
 .brand span{font-size:13.5px;color:var(--hdr-ink-2)}
+/* year range slider: two range inputs over one track; the hidden selects stay the source of truth */
+.yrs{display:flex;align-items:center;gap:10px;min-width:0}
+.yrs-l{text-transform:uppercase;letter-spacing:.06em;font-size:12px;font-weight:600;color:var(--ink-3)}
+.yrs.hdr .yrs-l{color:var(--hdr-ink-2)}
+.yrs-s{position:relative;flex:1 1 180px;min-width:150px;height:28px}
+.yrs-t,.yrs-f{position:absolute;top:12px;height:4px;border-radius:2px}
+.yrs-t{left:0;right:0;background:var(--rule)}
+.yrs-f{background:var(--navy)}
+.yrs.hdr .yrs-t{background:rgba(255,255,255,.22)}
+.yrs.hdr .yrs-f{background:var(--amber)}
+.yrs-s input{position:absolute;left:0;top:0;width:100%;height:28px;margin:0;background:none;pointer-events:none;-webkit-appearance:none;appearance:none}
+.yrs-s input::-webkit-slider-runnable-track{background:none;height:28px}
+.yrs-s input::-moz-range-track{background:none}
+.yrs-s input::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:16px;height:16px;margin-top:6px;border-radius:50%;background:var(--surface);border:2px solid var(--navy);cursor:grab}
+.yrs-s input::-moz-range-thumb{pointer-events:auto;width:14px;height:14px;border-radius:50%;background:var(--surface);border:2px solid var(--navy);cursor:grab}
+.yrs.hdr .yrs-s input::-webkit-slider-thumb{border-color:var(--amber)}
+.yrs.hdr .yrs-s input::-moz-range-thumb{border-color:var(--amber)}
+.yrs-s input:focus-visible::-webkit-slider-thumb{outline:2px solid var(--amber);outline-offset:2px}
+.yrs-v{font-family:var(--f-num);font-size:14px;color:var(--ink);white-space:nowrap;min-width:92px}
+.yrs.hdr .yrs-v{color:var(--hdr-ink)}
+.yrs.hdr .yrs-s{width:220px;flex:0 0 220px}
+.yrs:not(.hdr) .yrs-s{height:44px;margin:0 8px}
+.yrs-tk{position:absolute;top:26px;font:11px var(--f-num);color:var(--ink-3);transform:translateX(-50%);pointer-events:none}
+.yrs.hdr .yrs-tk{display:none}
 .ctl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
 #bulkctl .picker[hidden],#port[hidden],#pf-results[hidden],#pf-empty[hidden],#bulkctl[hidden],#bulk[hidden],#shape[hidden],#guide[hidden]{display:none!important}
 nav.top{display:flex;flex-wrap:wrap;gap:2px 22px;margin:0 0 -13px}
@@ -145,7 +169,7 @@ svg text{font-family:var(--f-ui)} svg .num{font-family:var(--f-num)}
 .badge{font:500 10.5px var(--f-num);padding:1px 6px;border-radius:4px;background:var(--rule-2);color:var(--ink-2)}
 .err{color:var(--neg);font-size:13px}
 .loading{opacity:.55;transition:opacity .2s}
-@media (max-width:640px){nav.top{gap:2px 12px}nav.top button{font-size:13px}header.bar{position:static}.bar-in{padding-inline:16px}.wrap{padding-inline:16px}.brand span{display:none}}
+@media (max-width:640px){.yrs.hdr{flex:1 1 100%}.yrs.hdr .yrs-s{width:auto;flex:1 1 120px;min-width:100px}.yrs-v{min-width:0}nav.top{gap:2px 12px}nav.top button{font-size:13px}header.bar{position:static}.bar-in{padding-inline:16px}.wrap{padding-inline:16px}.brand span{display:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 .contract{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px;align-items:end}
@@ -191,8 +215,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
   </div>
   <div class="ctl" id="bulkctl">
     <div class="picker"><input type="search" id="unitq" placeholder="Choose a wind or solar farm…" autocomplete="off" aria-label="Choose a wind or solar farm" style="width:250px"><ul id="unitlist" hidden></ul></div>
-    <label class="f"><span>From</span><select id="y0"></select></label>
-    <label class="f"><span>To</span><select id="y1"></select></label>
+    <div class="yrs hdr" data-y0="y0" data-y1="y1"><span class="yrs-l">Years</span><div class="yrs-s"><div class="yrs-t"></div><div class="yrs-f"></div><input type="range" class="lo" aria-label="First year"><input type="range" class="hi" aria-label="Last year"></div><output class="yrs-v"></output><select id="y0" hidden></select><select id="y1" hidden></select></div>
   </div>
 </div></header>
 
@@ -317,8 +340,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
       <p class="sub">Each day, the high block is the half-hours with the highest predispatch residual demand at the nomination run, and the low block the lowest. Settlement = quantity × block hours × (strike spread − realised spread), where realised spread = average spot in the high block − average spot in the low block. Positive = paid to the holder (short the spread).</p>
       <div class="contract">
         <label><span>Region</span><select id="sh-reg"></select></label>
-        <label><span>From</span><select id="sh-y0"></select></label>
-        <label><span>To</span><select id="sh-y1"></select></label>
+        <label class="full"><span>Years</span><div class="yrs" data-y0="sh-y0" data-y1="sh-y1"><div class="yrs-s"><div class="yrs-t"></div><div class="yrs-f"></div><input type="range" class="lo" aria-label="First year"><input type="range" class="hi" aria-label="Last year"></div><output class="yrs-v"></output><select id="sh-y0" hidden></select><select id="sh-y1" hidden></select></div></label>
         <label class="full"><span>Shaping duration (hours per block)</span><div class="seg" role="group" aria-label="Shaping duration" id="sh-dur"><button data-v="1">1</button><button data-v="2">2</button><button data-v="4" aria-pressed="true">4</button><button data-v="6">6</button><button data-v="8">8</button></div></label>
         <label><span>Minimum window</span><select id="sh-minw"></select></label>
         <label><span>Maximum windows</span><select id="sh-maxw"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option></select></label>
