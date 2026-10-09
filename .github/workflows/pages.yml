@@ -70,8 +70,8 @@ jobs:
           key: wid-${{ env.DATA_SOURCE }}-${{ github.run_id }}
 
       - name: Cache-bust scripts
-        # browsers otherwise keep an old app.js / shaping.js against a new index.html for a while after each upload
-        run: sed -i -E "s#src=\"(app|shaping)\.js\"#src=\"\1.js?v=${GITHUB_SHA::8}\"#g" site/index.html
+        # browsers otherwise keep an old app.js / shaping.js / portfolio.js against a new index.html for a while after each upload
+        run: sed -i -E "s#src=\"(app|shaping|portfolio)\.js\"#src=\"\1.js?v=${GITHUB_SHA::8}\"#g" site/index.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
