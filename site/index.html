@@ -40,7 +40,7 @@ header.bar label.f>span{color:var(--hdr-ink-2)}
 .brand b{font-weight:700;font-size:20px;letter-spacing:-.01em;color:var(--hdr-ink)}
 .brand span{font-size:13.5px;color:var(--hdr-ink-2)}
 .ctl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
-#bulkctl[hidden],#bulk[hidden],#shape[hidden],#guide[hidden]{display:none!important}
+#bulkctl .picker[hidden],#port[hidden],#pf-results[hidden],#pf-empty[hidden],#bulkctl[hidden],#bulk[hidden],#shape[hidden],#guide[hidden]{display:none!important}
 nav.top{display:flex;flex-wrap:wrap;gap:2px 22px;margin:0 0 -13px}
 nav.top button{font:600 14.5px var(--f-ui);color:var(--hdr-ink-2);background:none;border:0;border-bottom:3px solid transparent;padding:6px 0 9px;cursor:pointer}
 nav.top button[aria-selected="true"]{color:var(--hdr-ink);border-bottom-color:var(--amber)}
@@ -152,6 +152,8 @@ svg text{font-family:var(--f-ui)} svg .num{font-family:var(--f-num)}
 .contract label{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--ink-2)}
 .contract label>span{text-transform:uppercase;letter-spacing:.06em;font-size:12px;font-weight:600;color:var(--ink-3)}
 .contract input{width:100%;box-sizing:border-box}
+#pf-assets input{width:84px;font-size:13.5px;padding:2px 6px}
+#pf-assets td{vertical-align:middle}
 .appr{display:grid;grid-template-columns:minmax(0,1.6fr) auto;gap:8px 12px;align-items:center;margin-top:12px}
 .appr .nm{font-size:14.5px} .appr .nm b{font-weight:600} .appr .nm small{display:block;color:var(--ink-3);font-size:13px}
 .tag{display:inline-block;font:600 10.5px var(--f-num);padding:1px 6px;border-radius:4px;margin-right:6px;color:#fff}
@@ -159,6 +161,7 @@ svg text{font-family:var(--f-ui)} svg .num{font-family:var(--f-num)}
 tr.dflt td{background:var(--amber-soft)}
 td.l{text-align:left;font-family:var(--f-ui)}
 #cmp th{white-space:normal;vertical-align:bottom;line-height:1.25} #cmp th,#cmp td{padding:5px 6px}
+.unitbar[hidden]{display:none}
 .unitbar{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;font-size:14px;color:var(--ink-2);margin:0 0 12px}
 .unitbar b{color:var(--ink);font-size:18px;font-weight:600}
 .yr{font:500 11px var(--f-num);padding:1px 6px;border-radius:4px;border:1px solid var(--rule);color:var(--ink-3)}
@@ -199,6 +202,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
     <button role="tab" id="t-fa" aria-selected="true" data-tab="farm">Reference Trace Analysis</button>
     <button role="tab" id="t-st" aria-selected="false" data-tab="settle">Settlement Analysis</button>
     <button role="tab" id="t-fl" aria-selected="false" data-tab="fleet">Fleet Comparison</button>
+    <button role="tab" id="t-pf" aria-selected="false" data-tab="port">Portfolio</button>
   </nav>
   <div class="unitbar" id="unitbar"></div>
 
@@ -268,6 +272,43 @@ td.l{text-align:left;font-family:var(--f-ui)}
     </div>
     <div class="panel" style="margin-top:14px"><h3>Assets</h3><p class="sub">Per-MW figures at the $600 cap and $0 floor · click a row to open the farm · weeks with more than 10% missing data are dropped</p><div class="tblwrap" id="fl3"></div></div>
   </section>
+
+  <section id="port" role="tabpanel" hidden>
+    <div class="layout side">
+      <div class="panel">
+        <h3>Portfolio contracts</h3><p class="sub">Each asset has its own contract: settlement = its region's reference trace CF × its volume × (its strike − floating), per 5-min interval, summed by week. The floating cap and floor and the trace used by each approach are the same for every contract.</p>
+        <div class="contract">
+          <label class="full"><span>Add an asset</span><div class="picker"><input type="search" id="pfq" placeholder="Search by name, DUID, region or technology…" autocomplete="off" aria-label="Add an asset to the portfolio" style="width:100%;box-sizing:border-box"><ul id="pflist" hidden></ul></div></label>
+          <label><span>Strike for new assets $/MWh</span><input type="number" id="pf-dk" value="75" step="1"></label>
+          <label><span>Volume for new assets % of capacity</span><input type="number" id="pf-dq" value="100" step="5" min="0"></label>
+          <div class="full" style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="navbtn" id="pf-allk">Apply strike to all</button><button type="button" class="navbtn" id="pf-allq">Apply volume % to all</button><button type="button" class="navbtn" id="pf-example">Load example</button><button type="button" class="navbtn" id="pf-clear">Clear</button></div>
+          <label><span>Floating price cap $/MWh</span><input type="number" id="pf-cap" value="600" step="10"></label>
+          <label><span>Floating price floor $/MWh</span><input type="number" id="pf-floor" value="0" step="1"></label>
+        </div>
+        <p class="sub" style="margin-top:14px">Reference trace, applied to every contract</p>
+        <div class="appr">
+          <div class="nm"><span class="tag a">A</span><b>Exposed</b><small>Floating = spot price</small></div><div class="seg" role="group" aria-label="Trace for A"><button data-pap="a" data-tr="so" aria-pressed="true">Sent-out</button><button data-pap="a" data-tr="ug" aria-pressed="false">UIGF</button></div>
+          <div class="nm"><span class="tag b">B</span><b>Cap + floor</b><small>Floating clamped to floor – cap</small></div><div class="seg" role="group" aria-label="Trace for B"><button data-pap="b" data-tr="so" aria-pressed="false">Sent-out</button><button data-pap="b" data-tr="ug" aria-pressed="true">UIGF</button></div>
+          <div class="nm"><span class="tag c">C</span><b>Cap + volume knockout</b><small>Floating capped; no volume when price &lt; 0</small></div><div class="seg" role="group" aria-label="Trace for C"><button data-pap="c" data-tr="so" aria-pressed="true">Sent-out</button><button data-pap="c" data-tr="ug" aria-pressed="false">UIGF</button></div>
+        </div>
+        <p class="note">Each asset settles against the reference trace of its own region and technology. Portfolio statistics use the weeks where every asset has at least 90% of intervals with a price and SCADA, so an asset that starts generating part-way through the period shortens the common window. The portfolio is saved in this browser.</p>
+      </div>
+      <div class="stack">
+        <div class="kpis" id="pfkpi" style="margin:0"></div>
+        <div class="panel" id="pf-empty"><h3>No assets yet</h3><p class="sub">Search for wind or solar farms on the left to build a portfolio, or load the example (the largest wind and solar farm in each region, up to six).</p></div>
+        <div class="panel"><h3>Contracts</h3><p class="sub" id="pf-assetss"></p><span class="status" id="pfstatus"></span><div class="tblwrap" id="pf-assets" style="max-height:none"></div></div>
+      </div>
+    </div>
+    <div id="pf-results">
+      <div class="panel" style="margin-top:14px"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Portfolio: all approaches against both reference traces</h3><span style="display:inline-flex;gap:8px;align-items:center"><span class="rl">EaR measure</span><div class="seg" role="group" aria-label="Earnings-at-risk measure"><button data-prisk="p10" aria-pressed="true">P10</button><button data-prisk="cvar" aria-pressed="false">CVaR 10%</button><button data-prisk="param" aria-pressed="false">Parametric</button></div></span></div><p class="sub" id="pf-tbls"></p><div class="tblwrap" id="pf-tbl" style="max-height:none"></div></div>
+      <div class="grid g2" style="margin-top:14px">
+        <div class="panel"><h3>Portfolio cumulative net revenue</h3><p class="sub">Merchant plus contract settlement across all assets, $M · common complete weeks · selected trace per approach</p><div id="pf1"></div></div>
+        <div class="panel"><h3>Distribution of portfolio weekly net revenue</h3><p class="sub" id="pf2s"></p><div id="pf2"></div></div>
+        <div class="panel" style="grid-column:1/-1"><h3>Portfolio weekly net revenue</h3><p class="sub">$k per week · merchant vs each approach across all assets · common complete weeks</p><div id="pf3"></div></div>
+        <div class="panel" style="grid-column:1/-1"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Portfolio mean earnings vs earnings-at-risk by contract volume</h3><span style="display:inline-flex;gap:8px;align-items:center"><span class="rl">EaR measure</span><div class="seg" role="group" aria-label="Earnings-at-risk measure"><button data-prisk="p10" aria-pressed="true">P10</button><button data-prisk="cvar" aria-pressed="false">CVaR 10%</button><button data-prisk="param" aria-pressed="false">Parametric</button></div></span></div><p class="sub" id="pf4s"></p><div id="pf4"></div></div>
+      </div>
+    </div>
+  </section>
  </div>
  <div id="shape" hidden>
   <div class="layout side" style="margin-top:18px">
@@ -328,6 +369,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
     <a class="sub" href="#g-bulk-vis">Reference Trace Analysis tab</a>
     <a class="sub" href="#g-settle-vis">Settlement Analysis tab</a>
     <a class="sub" href="#g-fleet-vis">Fleet Comparison tab</a>
+    <a class="sub" href="#g-port-vis">Portfolio tab</a>
     <a href="#g-shape">Shaping contract</a>
     <a class="sub" href="#g-shape-how">How it settles</a>
     <a class="sub" href="#g-blocks">Choosing the blocks</a>
@@ -435,6 +477,19 @@ td.l{text-align:left;font-family:var(--f-ui)}
      </tbody>
     </table>
 
+    <h3 id="g-port-vis">Portfolio tab <button class="go" data-goto="bulk:port">open</button></h3>
+    <p>Combine several wind and solar farms, each with its own contract. Strike K<sub>i</sub> and volume Q<sub>i</sub> are set per contract in the Contracts table; the floating cap and floor, and the reference trace each approach uses, apply to every contract. Each asset settles against the reference trace of its own region and technology.</p>
+    <div class="fx">portfolio net<sub>w</sub> = Σ<sub>i</sub> merchant<sub>i,w</sub> + Σ<sub>i</sub> Q<sub>i</sub> · (K<sub>i</sub> · V<sub>r(i),w</sub> − F<sub>r(i),w</sub>)</div>
+    <p>V is the week's contract MWh per MW (Σ CF · v · 5/60) and F the floating value per MW (Σ CF · v · F(P) · 5/60) for the asset's region and technology, at the portfolio's cap and floor. Statistics use the weeks where every asset has complete data, so an asset that starts part-way through the period shortens the window.</p>
+    <table>
+     <tbody>
+      <tr><td>Contracts table</td><td>Edit strike and volume per asset, remove assets, or apply the default strike or volume % to all. Shows each asset's output, merchant and net $/MWh and settlement under each approach. The portfolio is saved in your browser.</td></tr>
+      <tr><td>All approaches table</td><td>As on the Settlement tab, for the whole portfolio, plus <b>diversification</b> = 1 − SD(portfolio weekly net) ÷ Σ SD(each asset's weekly net): the share of stand-alone volatility that cancels across assets.</td></tr>
+      <tr><td>Cumulative, distribution and weekly charts</td><td>Portfolio net revenue by approach against merchant only.</td></tr>
+      <tr><td>Mean vs earnings-at-risk</td><td>Every contract scaled together from 0% to 200% of its specified volume (each keeps its own strike), so the curve shows the risk–return trade-off of the combined position. 0% is the merchant-only portfolio; the filled marker is the volumes as specified.</td></tr>
+     </tbody>
+    </table>
+
     <h2 id="g-shape">Shaping contract <button class="go" data-goto="shape">open</button></h2>
     <p>A daily contract on the price spread between the hours of highest and lowest <b>residual demand</b>. It values the ability to move energy from low-demand to high-demand periods (the service storage or flexible load provides), and settles on that spread against a fixed strike.</p>
 
@@ -539,5 +594,6 @@ td.l{text-align:left;font-family:var(--f-ui)}
 <script src="vendor/uPlot.iife.min.js"></script>
 <script src="app.js"></script>
 <script src="shaping.js"></script>
+<script src="portfolio.js"></script>
 </body>
 </html>
