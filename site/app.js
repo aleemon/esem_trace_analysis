@@ -122,7 +122,8 @@ function wire() {
   document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => {
     S.tab = b.dataset.tab;
     document.querySelectorAll("nav.tabs button").forEach(x => x.setAttribute("aria-selected", x === b));
-    for (const id of ["farm", "settle", "fleet"]) $(id).hidden = id !== S.tab;
+    for (const id of ["farm", "settle", "fleet", "port"]) $(id).hidden = id !== S.tab;
+    document.querySelector("#bulkctl .picker").hidden = S.tab === "port" || S.tab === "fleet";
     render();
   });
   const num = (id, key, f) => $(id).oninput = e => { const v = parseFloat(e.target.value); if (isFinite(v)) { S[key] = v; f(); } };
@@ -157,11 +158,11 @@ function wire() {
 }
 function render() {
   renderUnitBar();
-  if (S.tab === "farm") renderFarm(); else if (S.tab === "settle") renderSettle(); else renderFleet();
+  if (S.tab === "farm") renderFarm(); else if (S.tab === "settle") renderSettle(); else if (S.tab === "port") renderPortfolio(); else renderFleet();
 }
 function renderUnitBar() {
   const u = UNIT.get(S.unit); if (!u) return;
-  $("unitbar").hidden = S.tab === "fleet";
+  $("unitbar").hidden = S.tab === "fleet" || S.tab === "port";
   const yrs = META.years.map(y => `<span class="yr ${u.member.includes(y) ? "in" : ""}" title="${u.member.includes(y) ? "In" : "Not in"} the ${y} ${u.region} ${u.tech} reference basket">${y}</span>`).join("");
   $("unitbar").innerHTML = `<b>${u.name}</b><span>${u.id} · ${u.region} · ${TECH[u.tech]} · ${fmt(u.cap, 1)} MW</span>
     <span>Registered ${u.reg_date || "–"} · first generation ${!u.first_gen ? "none yet" : (u.first_op && u.first_op < u.first_gen ? "before the data history starts" : u.first_gen)} · operational from ${u.first_op || "–"}</span>
@@ -622,7 +623,7 @@ const saveCsv = (name, head, rows) => save(new Blob([toCsv(head, rows)], { type:
 const slug = t => String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 const period = () => S.y0 === S.y1 ? `${S.y0}` : `${S.y0}-${S.y1}`;
 let TOP = "bulk";   // top-level tab: "bulk" (energy contract) or "shape" (shaping contract, shaping.js)
-const fileBase = key => TOP === "shape" && window.shFileBase ? shFileBase(key) : `${S.tab === "fleet" ? S.ftech : S.unit}_${period()}_${key}`;
+const fileBase = key => TOP === "shape" && window.shFileBase ? shFileBase(key) : `${S.tab === "fleet" ? S.ftech : S.tab === "port" ? "portfolio" : S.unit}_${period()}_${key}`;
 const mtime = t => new Date((t + NEM_OFF) * 1000).toISOString().slice(0, 16).replace("T", " ");   // market time, interval ending
 // add a title block above an image and save as PNG
 function composePng(src, w, h, panel, name) {
