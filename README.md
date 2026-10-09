@@ -14,7 +14,7 @@ R/synthetic.R             synthetic NEM data in the same shape as the fetchers (
 R/shaping.R               shaping contract: predispatch fetch (MMSDM PREDISP_ALL_DATA, weekly PredispatchIS archive), synthetic PD, files
 R/wdb.R                   WDB1 binary container (writer + reader)
 config/units_override.csv optional corrections to the register (duid, tech, cap_mw, name, exclude)
-site/                     index.html, app.js (bulk energy contract), shaping.js (shaping contract), vendor/; site/data is generated
+site/                     index.html, app.js (bulk energy contract), portfolio.js (portfolio tab), shaping.js (shaping contract), vendor/; site/data is generated
 tests/check_reference.R   independent recomputation of baskets, traces, settlement components and merchant
 .github/workflows/pages.yml
 ```
@@ -100,6 +100,14 @@ Rscript tests/check_reference.R 2024 SA1     # independent check of one region-y
 - The ESEM contract design is still being finalised; the basket and settlement rules here are the ones specified for
   this analysis, not a published term sheet.
 - Data is AEMO's; keep the source attribution shown in the page footer.
+
+## Portfolio tab
+
+Under Bulk Energy Contract, the Portfolio tab combines several assets, each with its own strike and volume, settled
+against its own region-technology reference trace; the floating cap, floor and the trace used by each approach are
+common to all contracts. Weekly V (contract MWh per MW) and F (floating $ per MW) are computed in the browser per
+region from the 5-min index files at the chosen cap and floor; merchant revenue and coverage come from `settle.bin`.
+Statistics use weeks where every asset has complete data. The portfolio is kept in the browser's local storage.
 
 ## Shaping contract tab
 
