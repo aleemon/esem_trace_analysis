@@ -181,7 +181,8 @@ svg text{font-family:var(--f-ui)} svg .num{font-family:var(--f-num)}
 .appr{display:grid;grid-template-columns:minmax(0,1.6fr) auto;gap:8px 12px;align-items:center;margin-top:12px}
 .appr .nm{font-size:14.5px} .appr .nm b{font-weight:600} .appr .nm small{display:block;color:var(--ink-3);font-size:13px}
 .tag{display:inline-block;font:600 10.5px var(--f-num);padding:1px 6px;border-radius:4px;margin-right:6px;color:#fff}
-.tag.a{background:var(--s1)} .tag.b{background:var(--s2);color:#0C0C0A} .tag.c{background:var(--s7)} .tag.m{background:var(--ink-3)}
+.tag.a{background:var(--s1)} .tag.b{background:var(--s3)} .tag.c{background:var(--s2);color:#0C0C0A} .tag.d{background:var(--s7)} .tag.e{background:var(--s8)} .tag.m{background:var(--ink-3)}
+.opts{display:grid;gap:8px;margin-top:6px}.opts div{display:grid;grid-template-columns:auto 1fr;gap:0 4px;align-items:baseline}.opts b{color:var(--ink);font-weight:600}.opts small{grid-column:2;color:var(--ink-3);font-size:12.5px}
 tr.dflt td{background:var(--amber-soft)}
 td.l{text-align:left;font-family:var(--f-ui)}
 #cmp th{white-space:normal;vertical-align:bottom;line-height:1.25} #cmp th,#cmp td{padding:5px 6px}
@@ -256,27 +257,27 @@ td.l{text-align:left;font-family:var(--f-ui)}
           <label for="cap"><span>Floating price cap $/MWh</span><input type="number" id="cap" value="600" step="10"></label>
           <label for="floor"><span>Floating price floor $/MWh</span><input type="number" id="floor" value="0" step="1"></label>
         </div>
-        <div class="appr">
-          <div class="nm"><span class="tag a">A</span><b>Exposed</b><small>Floating = spot price</small></div>
-          <div class="seg" role="group" aria-label="Trace for A"><button data-ap="a" data-tr="so" aria-pressed="true">Sent-out</button><button data-ap="a" data-tr="ug" aria-pressed="false">UIGF</button></div>
-          <div class="nm"><span class="tag b">B</span><b>Cap + floor</b><small id="bdesc">Floating clamped to $0 – $600</small></div>
-          <div class="seg" role="group" aria-label="Trace for B"><button data-ap="b" data-tr="so" aria-pressed="false">Sent-out</button><button data-ap="b" data-tr="ug" aria-pressed="true">UIGF</button></div>
-          <div class="nm"><span class="tag c">C</span><b>Cap + volume knockout</b><small id="cdesc">Floating capped at $600; quantity 0 when price &lt; 0</small></div>
-          <div class="seg" role="group" aria-label="Trace for C"><button data-ap="c" data-tr="so" aria-pressed="true">Sent-out</button><button data-ap="c" data-tr="ug" aria-pressed="false">UIGF</button></div>
+        <p class="sub" style="margin:14px 0 0">Contract options, all settled side by side</p>
+        <div class="opts">
+          <div><span class="tag a">A</span><b>Exposed, sent-out</b><small>Floating = spot · volume from the sent-out reference trace</small></div>
+          <div><span class="tag b">B</span><b>Exposed, UIGF</b><small>Floating = spot · UIGF replaces sent-out in negative-price intervals</small></div>
+          <div><span class="tag c">C</span><b>Capped, sent-out</b><small id="cdesc">Floating clamped to floor – cap</small></div>
+          <div><span class="tag d">D</span><b>Capped, UIGF</b><small id="ddesc">Floating clamped to floor – cap</small></div>
+          <div><span class="tag e">E</span><b>Volume knockout</b><small id="edesc">Floating capped; no volume when price &lt; $0</small></div>
         </div>
-        <p class="note">The UIGF trace differs from sent-out only in negative-price intervals, so it cannot change approach C, where those intervals are knocked out.</p>
+        <p class="note">E knocks out every negative-price interval, which is the only place the UIGF trace differs from sent-out, so E is the same on either trace.</p>
         <p class="note">Merchant = farm sent-out × spot, floored at $0 when the price is negative.</p>
       </div>
       <div class="stack">
         <div class="kpis" id="stkpi" style="margin:0"></div>
-        <div class="panel"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">All approaches against both reference traces</h3><span style="display:inline-flex;gap:8px;align-items:center"><span class="rl">EaR measure</span><div class="seg" role="group" aria-label="Earnings-at-risk measure"><button data-risk="p10" aria-pressed="true">P10</button><button data-risk="cvar" aria-pressed="false">CVaR 10%</button><button data-risk="param" aria-pressed="false">Parametric</button></div></span></div><p class="sub" id="cmps"></p><div class="tblwrap" id="cmp" style="max-height:none"></div></div>
+        <div class="panel"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">All contract options</h3><span style="display:inline-flex;gap:8px;align-items:center"><span class="rl">EaR measure</span><div class="seg" role="group" aria-label="Earnings-at-risk measure"><button data-risk="p10" aria-pressed="true">P10</button><button data-risk="cvar" aria-pressed="false">CVaR 10%</button><button data-risk="param" aria-pressed="false">Parametric</button></div></span></div><p class="sub" id="cmps"></p><div class="tblwrap" id="cmp" style="max-height:none"></div></div>
       </div>
     </div>
     <div class="grid g2" style="margin-top:14px">
-      <div class="panel"><h3>Cumulative net revenue</h3><p class="sub">Merchant plus contract settlement, $M · selected trace per approach</p><div id="st1"></div></div>
-      <div class="panel"><h3>What moves settlement between approaches</h3><p class="sub" id="st2s"></p><div id="st2"></div></div>
+      <div class="panel"><h3>Cumulative net revenue</h3><p class="sub">Merchant plus contract settlement, $M · each contract option</p><div id="st1"></div></div>
+      <div class="panel"><h3>What moves settlement between options</h3><p class="sub" id="st2s"></p><div id="st2"></div></div>
       <div class="panel" style="grid-column:1/-1"><h3>Distribution of weekly net revenue</h3><p class="sub" id="st4s"></p><div id="st4"></div></div>
-      <div class="panel" style="grid-column:1/-1"><h3>Weekly net revenue</h3><p class="sub">$k per week · merchant vs each approach · complete weeks only (the same weeks as the table's statistics); partial weeks at the period edges are hidden here but included in totals</p><div id="st3"></div></div>
+      <div class="panel" style="grid-column:1/-1"><h3>Weekly net revenue</h3><p class="sub">$k per week · merchant vs each option · complete weeks only (the same weeks as the table's statistics); partial weeks at the period edges are hidden here but included in totals</p><div id="st3"></div></div>
       <div class="panel" style="grid-column:1/-1"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Mean earnings vs earnings-at-risk by contract volume</h3><span style="display:inline-flex;gap:8px;align-items:center"><span class="rl">EaR measure</span><div class="seg" role="group" aria-label="Earnings-at-risk measure"><button data-risk="p10" aria-pressed="true">P10</button><button data-risk="cvar" aria-pressed="false">CVaR 10%</button><button data-risk="param" aria-pressed="false">Parametric</button></div></span></div><p class="sub" id="st5s"></p><div id="st5"></div></div>
     </div>
   </section>
@@ -287,10 +288,9 @@ td.l{text-align:left;font-family:var(--f-ui)}
       <label class="f"><span>Region</span><select id="freg"><option value="">All regions</option></select></label>
       <label class="f"><span>Fixed price</span><input type="number" id="fk" value="75" step="1"><span style="text-transform:none;letter-spacing:0">$/MWh</span></label>
       <label class="f"><span>Contract</span><input type="number" id="fr" value="100" step="5" min="0"><span style="text-transform:none;letter-spacing:0">% of capacity</span></label>
-      <label class="f"><span>Traces</span><select id="fpair"><option value="dflt">A sent-out · B UIGF · C sent-out</option><option value="so">Sent-out for all</option><option value="ug">UIGF for all</option></select></label>
     </div>
     <div class="grid g2">
-      <div class="panel"><h3>Net revenue by approach, across assets</h3><p class="sub" id="fl1s"></p><div id="fl1"></div></div>
+      <div class="panel"><h3>Net revenue by option, across assets</h3><p class="sub" id="fl1s"></p><div id="fl1"></div></div>
       <div class="panel"><h3>Weekly downside volatility vs merchant</h3><p class="sub">Downside SD(weekly net) ÷ downside SD(weekly merchant) − 1, across assets · downside SD = √mean(min(x − mean, 0)²) over complete weeks · positive = the contract adds downside volatility</p><div id="fl2"></div></div>
     </div>
     <div class="panel" style="margin-top:14px"><h3>Assets</h3><p class="sub">Per-MW figures at the $600 cap and $0 floor · click a row to open the farm · weeks with more than 10% missing data are dropped</p><div class="tblwrap" id="fl3"></div></div>
@@ -299,7 +299,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
   <section id="port" role="tabpanel" hidden>
     <div class="layout side">
       <div class="panel">
-        <h3>Portfolio contracts</h3><p class="sub">Each asset has its own contract: settlement = its region's reference trace CF × its volume × (its strike − floating), per 5-min interval, summed by week. The floating cap and floor and the trace used by each approach are the same for every contract.</p>
+        <h3>Portfolio contracts</h3><p class="sub">Each asset has its own contract: settlement = its region's reference trace CF × its volume × (its strike − floating), per 5-min interval, summed by week. The floating cap and floor are the same for every contract, and every contract is settled under all five options.</p>
         <div class="contract">
           <label class="full"><span>Add an asset</span><div class="picker"><input type="search" id="pfq" placeholder="Search by name, DUID, region or technology…" autocomplete="off" aria-label="Add an asset to the portfolio" style="width:100%;box-sizing:border-box"><ul id="pflist" hidden></ul></div></label>
           <label><span>Strike for new assets $/MWh</span><input type="number" id="pf-dk" value="75" step="1"></label>
@@ -308,11 +308,13 @@ td.l{text-align:left;font-family:var(--f-ui)}
           <label><span>Floating price cap $/MWh</span><input type="number" id="pf-cap" value="600" step="10"></label>
           <label><span>Floating price floor $/MWh</span><input type="number" id="pf-floor" value="0" step="1"></label>
         </div>
-        <p class="sub" style="margin-top:14px">Reference trace, applied to every contract</p>
-        <div class="appr">
-          <div class="nm"><span class="tag a">A</span><b>Exposed</b><small>Floating = spot price</small></div><div class="seg" role="group" aria-label="Trace for A"><button data-pap="a" data-tr="so" aria-pressed="true">Sent-out</button><button data-pap="a" data-tr="ug" aria-pressed="false">UIGF</button></div>
-          <div class="nm"><span class="tag b">B</span><b>Cap + floor</b><small>Floating clamped to floor – cap</small></div><div class="seg" role="group" aria-label="Trace for B"><button data-pap="b" data-tr="so" aria-pressed="false">Sent-out</button><button data-pap="b" data-tr="ug" aria-pressed="true">UIGF</button></div>
-          <div class="nm"><span class="tag c">C</span><b>Cap + volume knockout</b><small>Floating capped; no volume when price &lt; 0</small></div><div class="seg" role="group" aria-label="Trace for C"><button data-pap="c" data-tr="so" aria-pressed="true">Sent-out</button><button data-pap="c" data-tr="ug" aria-pressed="false">UIGF</button></div>
+        <p class="sub" style="margin:14px 0 0">Contract options, applied to every contract</p>
+        <div class="opts">
+          <div><span class="tag a">A</span><b>Exposed, sent-out</b><small>Floating = spot</small></div>
+          <div><span class="tag b">B</span><b>Exposed, UIGF</b><small>Floating = spot · UIGF in negative-price intervals</small></div>
+          <div><span class="tag c">C</span><b>Capped, sent-out</b><small>Floating clamped to floor – cap</small></div>
+          <div><span class="tag d">D</span><b>Capped, UIGF</b><small>Floating clamped to floor – cap · UIGF in negative-price intervals</small></div>
+          <div><span class="tag e">E</span><b>Volume knockout</b><small>Floating capped; no volume when price &lt; $0</small></div>
         </div>
         <p class="note">Each asset settles against the reference trace of its own region and technology. Portfolio statistics use the weeks where every asset has at least 90% of intervals with a price and SCADA, so an asset that starts generating part-way through the period shortens the common window. The portfolio is saved in this browser.</p>
       </div>
@@ -323,11 +325,11 @@ td.l{text-align:left;font-family:var(--f-ui)}
       </div>
     </div>
     <div id="pf-results">
-      <div class="panel" style="margin-top:14px"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Portfolio: all approaches against both reference traces</h3><span style="display:inline-flex;gap:8px;align-items:center"><span class="rl">EaR measure</span><div class="seg" role="group" aria-label="Earnings-at-risk measure"><button data-prisk="p10" aria-pressed="true">P10</button><button data-prisk="cvar" aria-pressed="false">CVaR 10%</button><button data-prisk="param" aria-pressed="false">Parametric</button></div></span></div><p class="sub" id="pf-tbls"></p><div class="tblwrap" id="pf-tbl" style="max-height:none"></div></div>
+      <div class="panel" style="margin-top:14px"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Portfolio: all contract options</h3><span style="display:inline-flex;gap:8px;align-items:center"><span class="rl">EaR measure</span><div class="seg" role="group" aria-label="Earnings-at-risk measure"><button data-prisk="p10" aria-pressed="true">P10</button><button data-prisk="cvar" aria-pressed="false">CVaR 10%</button><button data-prisk="param" aria-pressed="false">Parametric</button></div></span></div><p class="sub" id="pf-tbls"></p><div class="tblwrap" id="pf-tbl" style="max-height:none"></div></div>
       <div class="grid g2" style="margin-top:14px">
-        <div class="panel"><h3>Portfolio cumulative net revenue</h3><p class="sub">Merchant plus contract settlement across all assets, $M · common complete weeks · selected trace per approach</p><div id="pf1"></div></div>
+        <div class="panel"><h3>Portfolio cumulative net revenue</h3><p class="sub">Merchant plus contract settlement across all assets, $M · common complete weeks · each contract option</p><div id="pf1"></div></div>
         <div class="panel"><h3>Distribution of portfolio weekly net revenue</h3><p class="sub" id="pf2s"></p><div id="pf2"></div></div>
-        <div class="panel" style="grid-column:1/-1"><h3>Portfolio weekly net revenue</h3><p class="sub">$k per week · merchant vs each approach across all assets · common complete weeks</p><div id="pf3"></div></div>
+        <div class="panel" style="grid-column:1/-1"><h3>Portfolio weekly net revenue</h3><p class="sub">$k per week · merchant vs each option across all assets · common complete weeks</p><div id="pf3"></div></div>
         <div class="panel" style="grid-column:1/-1"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Portfolio mean earnings vs earnings-at-risk by contract volume</h3><span style="display:inline-flex;gap:8px;align-items:center"><span class="rl">EaR measure</span><div class="seg" role="group" aria-label="Earnings-at-risk measure"><button data-prisk="p10" aria-pressed="true">P10</button><button data-prisk="cvar" aria-pressed="false">CVaR 10%</button><button data-prisk="param" aria-pressed="false">Parametric</button></div></span></div><p class="sub" id="pf4s"></p><div id="pf4"></div></div>
       </div>
     </div>
@@ -387,7 +389,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
     <a href="#g-about">About this tool</a>
     <a href="#g-bulk">Bulk energy contract</a>
     <a class="sub" href="#g-trace">Reference trace</a>
-    <a class="sub" href="#g-settle">Settlement and approaches</a>
+    <a class="sub" href="#g-settle">Settlement and contract options</a>
     <a class="sub" href="#g-bulk-vis">Reference Trace Analysis tab</a>
     <a class="sub" href="#g-settle-vis">Settlement Analysis tab</a>
     <a class="sub" href="#g-fleet-vis">Fleet Comparison tab</a>
@@ -430,21 +432,23 @@ td.l{text-align:left;font-family:var(--f-ui)}
     <div class="callout">The reference trace has no individual unit caps: it is a pure capacity-weighted aggregate, so no single unit's share of the basket is limited. A large unit, or one in a small regional basket, moves the trace in proportion to its capacity, and an outage or curtailment at that unit shows up in the trace. (Each unit's 5-minute output is bounded to 0–registered capacity as a data-quality check; that is not a weighting cap.)</div>
     <p>Each farm's header shows the years its own unit was in its basket, and links to a CSV of every basket member with the dates used for the six-month rule.</p>
 
-    <h3 id="g-settle">Settlement and the three approaches</h3>
+    <h3 id="g-settle">Settlement and the five contract options</h3>
     <div class="fx">settlement = trace CF × Q (MW) × (K − floating) × 5/60</div>
-    <p>Calculated per 5-minute interval and summed by billing week (Sunday–Saturday). K is the fixed price and Q the contract quantity in MW. A positive amount is paid to the generator. The approaches differ only in the floating price and in which intervals carry volume:</p>
+    <p>Calculated per 5-minute interval and summed by billing week (Sunday–Saturday). K is the fixed price and Q the contract quantity in MW. A positive amount is paid to the generator. The options differ only in the floating price and in which intervals carry volume:</p>
     <table>
-     <thead><tr><th>Approach</th><th>Floating price</th><th>Volume</th><th>Effect</th></tr></thead>
+     <thead><tr><th>Option</th><th>Floating price</th><th>Trace (volume)</th><th>Effect</th></tr></thead>
      <tbody>
-      <tr><td>A · Exposed</td><td>Spot</td><td>Every interval</td><td>Full swap. The generator pays the spike above K on reference volume, and receives K − P (more than K) when prices are negative.</td></tr>
-      <tr><td>B · Cap + floor</td><td>Spot clamped to [floor, cap], default [$0, $600]</td><td>Every interval</td><td>Limits the generator's payment in spike intervals to the cap, and stops negative prices increasing its receipts above K − floor.</td></tr>
-      <tr><td>C · Cap + knockout</td><td>Spot capped at the cap</td><td>Zero when spot &lt; $0</td><td>Spikes capped as in B; negative-price intervals drop out of the contract entirely.</td></tr>
+      <tr><td>A · Exposed, sent-out</td><td>Spot</td><td>Sent-out, every interval</td><td>Full swap. The generator pays the spike above K on reference volume, and receives K − P (more than K) when prices are negative; reference volume shrinks when the basket is curtailed.</td></tr>
+      <tr><td>B · Exposed, UIGF</td><td>Spot</td><td>UIGF in negative-price intervals, every interval</td><td>As A, but the curtailed volume stays in the contract, so negative-price intervals carry the full forecast volume at K − P.</td></tr>
+      <tr><td>C · Capped, sent-out</td><td>Spot clamped to [floor, cap], default [$0, $600]</td><td>Sent-out, every interval</td><td>Limits the generator's payment in spike intervals to the cap, and stops negative prices increasing its receipts above K − floor.</td></tr>
+      <tr><td>D · Capped, UIGF</td><td>Spot clamped to [floor, cap]</td><td>UIGF in negative-price intervals, every interval</td><td>As C on the UIGF trace: curtailed volume settles at K − floor.</td></tr>
+      <tr><td>E · Volume knockout</td><td>Spot capped at the cap</td><td>Zero when spot &lt; $0</td><td>Spikes capped as in C; negative-price intervals drop out of the contract entirely, so the trace choice does not matter.</td></tr>
      </tbody>
     </table>
     <figure>
-     <svg class="dg" viewBox="0 0 900 290" role="img" aria-label="Floating price paid under approaches A, B and C as a function of spot">
+     <svg class="dg" viewBox="0 0 900 290" role="img" aria-label="Floating price paid under options A to E as a function of spot">
       <rect x="110" y="40" width="128" height="222" fill="var(--neg)" opacity=".08"/>
-      <text x="174" y="252" text-anchor="middle" class="m" style="fill:var(--neg)">C: no volume</text>
+      <text x="174" y="252" text-anchor="middle" class="m" style="fill:var(--neg)">E: no volume</text>
       <line class="gr" x1="110" x2="760" y1="40" y2="40"/><line class="gr" x1="110" x2="760" y1="67.5" y2="67.5"/><line class="gr" x1="110" x2="760" y1="177.5" y2="177.5"/>
       <line class="ax" x1="110" x2="760" y1="150" y2="150"/><line class="ax" x1="238" x2="238" y1="30" y2="262"/>
       <line class="gr" x1="642" x2="642" y1="40" y2="262" stroke-dasharray="3 3"/>
@@ -452,18 +456,18 @@ td.l{text-align:left;font-family:var(--f-ui)}
       <text x="238" y="278" text-anchor="middle" class="m">spot $0</text><text x="642" y="278" text-anchor="middle" class="m">spot = cap $600</text>
       <polyline points="110,176.2 760,43.4" fill="none" stroke="var(--s1)" stroke-width="2.5"/>
       <polyline points="110,150 238,150 642,67.5 760,67.5" fill="none" stroke="var(--s2)" stroke-width="3" stroke-dasharray="8 5"/>
-      <polyline points="238,156 642,73.5 760,73.5" fill="none" stroke="var(--s7)" stroke-width="2.5" stroke-dasharray="2 4"/>
-      <text x="768" y="47" class="t" style="fill:var(--s1)">A: spot</text>
-      <text x="768" y="64" class="t" style="fill:var(--s2)">B: clamped</text>
-      <text x="768" y="88" class="t" style="fill:var(--s7)">C: capped</text>
+      <polyline points="238,156 642,73.5 760,73.5" fill="none" stroke="var(--s8)" stroke-width="2.5" stroke-dasharray="2 4"/>
+      <text x="768" y="47" class="t" style="fill:var(--s1)">A, B: spot</text>
+      <text x="768" y="64" class="t" style="fill:var(--s2)">C, D: clamped</text>
+      <text x="768" y="88" class="t" style="fill:var(--s8)">E: capped</text>
       <text x="40" y="150" text-anchor="middle" transform="rotate(-90 40 150)">floating price settled</text>
      </svg>
-     <figcaption>The floating price each approach settles against, for a given spot price (floor $0, cap $600 shown). Above the cap, B and C stop the generator paying more; below zero, B pays the floor and C removes the volume altogether.</figcaption>
+     <figcaption>The floating price each option settles against, for a given spot price (floor $0, cap $600 shown). Above the cap, C, D and E stop the generator paying more; below zero, C and D pay the floor and E removes the volume altogether.</figcaption>
     </figure>
-    <p>Each approach can be settled against either trace. The UIGF trace differs from sent-out only in negative-price intervals, which approach C knocks out, so it cannot change C.</p>
+    <p>The UIGF trace differs from sent-out only in negative-price intervals. Option E knocks those intervals out, so E is identical on either trace and is settled on sent-out.</p>
     <div class="fx">merchant = farm sent-out × max(spot, 0) × 5/60 &nbsp;&nbsp;·&nbsp;&nbsp; net revenue = merchant + settlement</div>
     <div class="fx">weekly net<sub>w</sub> = Σ<sub>t∈w</sub> [ G<sub>t</sub> · max(P<sub>t</sub>, 0) + CF<sub>t</sub> · Q · v<sub>t</sub> · (K − F(P<sub>t</sub>)) ] × 5/60</div>
-    <p>G is the farm's sent-out, CF the reference trace, F(P) the floating price above, and v the volume factor (1, or 0 when spot is negative under approach C).</p>
+    <p>G is the farm's sent-out, CF the reference trace, F(P) the floating price above, and v the volume factor (1, or 0 when spot is negative under option E).</p>
     <p>Merchant revenue is floored at zero on the assumption that the farm does not generate into negative prices.</p>
 
     <h3 id="g-bulk-vis">Reference Trace Analysis tab <button class="go" data-goto="bulk:farm">open</button></h3>
@@ -476,16 +480,16 @@ td.l{text-align:left;font-family:var(--f-ui)}
     </table>
 
     <h3 id="g-settle-vis">Settlement Analysis tab <button class="go" data-goto="bulk:settle">open</button></h3>
-    <p>Inputs on the left: fixed price, quantity, cap and floor, and the trace used by each approach. All results use complete weeks for statistics: weeks with a price and farm SCADA in at least 90% of intervals. Partial weeks at the edges of the period count towards totals but not towards weekly statistics.</p>
+    <p>Inputs on the left: fixed price, quantity, cap and floor; all five options are settled side by side. All results use complete weeks for statistics: weeks with a price and farm SCADA in at least 90% of intervals. Partial weeks at the edges of the period count towards totals but not towards weekly statistics.</p>
     <table>
      <tbody>
-      <tr><td>Headline tiles</td><td>Farm output (GWh and capacity factor), merchant revenue, and net revenue under each approach on its selected trace, with $/MWh of farm output and the settlement component.</td></tr>
-      <tr><td>All approaches table</td><td>Every approach × trace combination, with merchant-only for reference. Contract GWh is the reference volume settled; net $/MWh and vs merchant $/MWh are per MWh of farm output. Weekly SD, downside SD, mean week, the tail measure and EaR describe the spread of weekly net revenue (see <a href="#g-metrics">risk metrics</a>). Worst week shows its date on hover. Highlighted rows are the selected trace per approach.</td></tr>
-      <tr><td>Cumulative net revenue</td><td>Running total of merchant + settlement per approach, by week. Diverging slopes show when each approach adds or removes revenue.</td></tr>
-      <tr><td>What moves settlement</td><td>A bridge from approach A to B and to C. Each step is the change in settlement from one rule alone: switching trace, the floor, the cap, and the negative-price knockout.</td></tr>
+      <tr><td>Headline tiles</td><td>Farm output (GWh and capacity factor), merchant revenue, and net revenue under each option, with $/MWh of farm output and the settlement component.</td></tr>
+      <tr><td>All contract options table</td><td>Each option A–E, with merchant-only for reference. Contract GWh is the reference volume settled; net $/MWh and vs merchant $/MWh are per MWh of farm output. WeeklyWeekly SD, downside SD, mean week, the tail measure and EaR describe the spread of weekly net revenue (see <a href="#g-metrics">risk metrics</a>). Worst week shows its date on hover.</td></tr>
+      <tr><td>Cumulative net revenue</td><td>Running total of merchant + settlement per option, by week. Diverging slopes show when each option adds or removes revenue. UIGF options are dashed.</td></tr>
+      <tr><td>What moves settlement</td><td>A bridge from option A to each of B–E. Each step is the change in settlement from one rule alone: switching to the UIGF trace (A→B, C→D), the floor and the cap (A→C), and the negative-price knockout and cap (A→E).</td></tr>
       <tr><td>Distribution of weekly net revenue</td><td>Box plots of complete weeks: box P25–P75, line median, whiskers P10–P90, circles the worst and best week.</td></tr>
-      <tr><td>Weekly net revenue</td><td>Each complete week's net revenue by approach against merchant. The legend toggles series.</td></tr>
-      <tr><td>Mean vs earnings-at-risk</td><td>For contract volumes of 0–200% of the farm's capacity in 10% steps, mean weekly net revenue (y) against earnings-at-risk (x), one line per approach. 0% is merchant only; the filled marker is the current Q. Up and to the left is better. The leftmost point (the nose) is the volume with the least risk; along the curve, the slope is the extra mean earnings per unit of extra risk. Settlement is linear in Q, so each point scales a 1 MW settlement exactly.</td></tr>
+      <tr><td>Weekly net revenue</td><td>Each complete week's net revenue by option against merchant. The legend toggles series.</td></tr>
+      <tr><td>Mean vs earnings-at-risk</td><td>For contract volumes of 0–200% of the farm's capacity in 10% steps, mean weekly net revenue (y) against earnings-at-risk (x), one line per option. 0% is merchant only; the filled marker is the current Q. Up and to the left is better. The leftmost point (the nose) is the volume with the least risk; along the curve, the slope is the extra mean earnings per unit of extra risk. Settlement is linear in Q, so each point scales a 1 MW settlement exactly.</td></tr>
      </tbody>
     </table>
 
@@ -493,21 +497,21 @@ td.l{text-align:left;font-family:var(--f-ui)}
     <p>Every wind or solar farm in the chosen region, settled with a contract sized as a percentage of its own capacity. These use weekly components precomputed at the default $600 cap and $0 floor (any fixed price works, because settlement is linear in K).</p>
     <table>
      <tbody>
-      <tr><td>Net revenue by approach</td><td>Distribution across assets of net revenue per MWh of each asset's own output, merchant and each approach.</td></tr>
+      <tr><td>Net revenue by option</td><td>Distribution across assets of net revenue per MWh of each asset's own output, merchant and each option.</td></tr>
       <tr><td>Downside volatility vs merchant</td><td>Downside SD of weekly net revenue ÷ downside SD of weekly merchant revenue − 1, across assets. Negative means the contract reduced downside volatility; positive means it added some, usually where an asset's output correlates poorly with its regional trace.</td></tr>
       <tr><td>Assets table</td><td>The same figures per asset. Click a column to sort, or a row to open that farm.</td></tr>
      </tbody>
     </table>
 
     <h3 id="g-port-vis">Portfolio tab <button class="go" data-goto="bulk:port">open</button></h3>
-    <p>Combine several wind and solar farms, each with its own contract. Strike K<sub>i</sub> and volume Q<sub>i</sub> are set per contract in the Contracts table; the floating cap and floor, and the reference trace each approach uses, apply to every contract. Each asset settles against the reference trace of its own region and technology.</p>
+    <p>Combine several wind and solar farms, each with its own contract. Strike K<sub>i</sub> and volume Q<sub>i</sub> are set per contract in the Contracts table; the floating cap and floor apply to every contract, and every contract is settled under all five options. Each asset settles against the reference trace of its own region and technology.</p>
     <div class="fx">portfolio net<sub>w</sub> = Σ<sub>i</sub> merchant<sub>i,w</sub> + Σ<sub>i</sub> Q<sub>i</sub> · (K<sub>i</sub> · V<sub>r(i),w</sub> − F<sub>r(i),w</sub>)</div>
     <p>V is the week's contract MWh per MW (Σ CF · v · 5/60) and F the floating value per MW (Σ CF · v · F(P) · 5/60) for the asset's region and technology, at the portfolio's cap and floor. Statistics use the weeks where every asset has complete data, so an asset that starts part-way through the period shortens the window.</p>
     <table>
      <tbody>
-      <tr><td>Contracts table</td><td>Edit strike and volume per asset, remove assets, or apply the default strike or volume % to all. Shows each asset's output, merchant and net $/MWh and settlement under each approach. The portfolio is saved in your browser.</td></tr>
-      <tr><td>All approaches table</td><td>As on the Settlement tab, for the whole portfolio, plus <b>diversification</b> = 1 − SD(portfolio weekly net) ÷ Σ SD(each asset's weekly net): the share of stand-alone volatility that cancels across assets.</td></tr>
-      <tr><td>Cumulative, distribution and weekly charts</td><td>Portfolio net revenue by approach against merchant only.</td></tr>
+      <tr><td>Contracts table</td><td>Edit strike and volume per asset, remove assets, or apply the default strike or volume % to all. Shows each asset's output, merchant and net $/MWh and settlement under each option. The portfolio is saved in your browser.</td></tr>
+      <tr><td>All contract options table</td><td>As on the Settlement tab, for the whole portfolio, plus <b>diversification</b> = 1 − SD(portfolio weekly net) ÷ Σ SD(each asset's weekly net): the share of stand-alone volatility that cancels across assets.</td></tr>
+      <tr><td>Cumulative, distribution and weekly charts</td><td>Portfolio net revenue by option against merchant only.</td></tr>
       <tr><td>Mean vs earnings-at-risk</td><td>Every contract scaled together from 0% to 200% of its specified volume (each keeps its own strike), so the curve shows the risk–return trade-off of the combined position. 0% is the merchant-only portfolio; the filled marker is the volumes as specified.</td></tr>
      </tbody>
     </table>
@@ -592,7 +596,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
       <tr><td>Downside SD</td><td>√ mean(min(x − mean, 0)²): only weeks below the mean contribute, so a few very good weeks don't count as risk.</td></tr>
       <tr><td>P10</td><td>The 10th-percentile week: 10% of weeks fall below it. With about 50 weeks a year it sits between the 5th and 6th worst week, so it can jump as weeks re-rank.</td></tr>
       <tr><td>CVaR 10%</td><td>The average of the worst 10% of weeks (fractionally weighted at the boundary). Smoother than P10 and sensitive to how bad the tail is, not just where it starts.</td></tr>
-      <tr><td>Parametric</td><td>Mean − 1.28 × SD: the 10th percentile if weekly revenue were normally distributed. Perfectly smooth, but it treats upside as risk and misses skew. It overstates risk when revenue is right-skewed (low contract volume) and understates it when a fat left tail appears (high volume under approach A).</td></tr>
+      <tr><td>Parametric</td><td>Mean − 1.28 × SD: the 10th percentile if weekly revenue were normally distributed. Perfectly smooth, but it treats upside as risk and misses skew. It overstates risk when revenue is right-skewed (low contract volume) and understates it when a fat left tail appears (high volume under option A).</td></tr>
       <tr><td>Earnings-at-risk (EaR)</td><td>Mean week − the selected tail measure: how far a bad week falls short of a typical one. Choose the measure with the toggle on the table or the chart.</td></tr>
      </tbody>
     </table>
