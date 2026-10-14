@@ -67,13 +67,16 @@ A basket unit with missing data in an interval is dropped from numerator and den
 Weekly statistics (SD, downside SD, P10, worst week) use complete weeks only: at least 90% of intervals with a price and farm SCADA. P10 is the 10th percentile of weekly net revenue (the low tail). Earnings-at-risk (EaR) = mean week − a low-tail measure, selectable on the page: P10 week (default), CVaR 10% (average of the worst 10% of weeks, fractional at the boundary) or parametric (1.28 × weekly SD). Downside SD = √mean(min(x − mean, 0)²). The settlement tab also plots mean week against EaR for contract volumes of 0–200% of capacity in 10% steps (settlement is linear in Q, so each point scales a 1 MW settlement).
 Positive is paid to the generator.
 
-| Approach | Floating price | Quantity |
-| --- | --- | --- |
-| A · Exposed | spot | Q |
-| B · Cap + floor | spot clamped to [floor, cap], default [$0, $600] | Q |
-| C · Cap + knockout | min(spot, cap) | 0 when spot < 0 |
+| Option | Floating price | Trace | Quantity |
+| --- | --- | --- | --- |
+| A · Exposed, sent-out | spot | sent-out | Q |
+| B · Exposed, UIGF | spot | UIGF on negative | Q |
+| C · Capped, sent-out | spot clamped to [floor, cap], default [$0, $600] | sent-out | Q |
+| D · Capped, UIGF | spot clamped to [floor, cap] | UIGF on negative | Q |
+| E · Volume knockout | min(spot, cap) | sent-out (identical on UIGF) | 0 when spot < 0 |
 
-The UIGF trace differs from the sent-out trace only in negative-price intervals, so it cannot change approach C.
+All five options are settled side by side on every tab. The UIGF trace differs from the sent-out trace only in
+negative-price intervals, which E knocks out, so E is the same on either trace.
 
 **Merchant** = farm SCADA (≥ 0) × max(spot, 0) × 5/60, i.e. floored at zero when the price is negative.
 **Net revenue** = merchant + settlement.
@@ -104,8 +107,8 @@ Rscript tests/check_reference.R 2024 SA1     # independent check of one region-y
 ## Portfolio tab
 
 Under Bulk Energy Contract, the Portfolio tab combines several assets, each with its own strike and volume, settled
-against its own region-technology reference trace; the floating cap, floor and the trace used by each approach are
-common to all contracts. Weekly V (contract MWh per MW) and F (floating $ per MW) are computed in the browser per
+against its own region-technology reference trace; the floating cap and floor are common to all contracts, and every
+contract is settled under all five options. Weekly V (contract MWh per MW) and F (floating $ per MW) are computed in the browser per
 region from the 5-min index files at the chosen cap and floor; merchant revenue and coverage come from `settle.bin`.
 Statistics use weeks where every asset has complete data. The portfolio is kept in the browser's local storage.
 

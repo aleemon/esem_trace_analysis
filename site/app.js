@@ -12,7 +12,16 @@ const money = (v, d = 1) => (v == null || !isFinite(v)) ? "–" : (v < 0 ? "−$
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const TZ = "Australia/Brisbane";
 const TECH = { wind: "Wind", solar: "Solar" };
-const AP = { a: "A · Exposed", b: "B · Cap + floor", c: "C · Cap + knockout" };
+// Five contract options. key = the settlement mechanism (a exposed, b cap + floor, c cap + knockout) and trace.
+const OPTS = ["a", "b", "c", "d", "e"];
+const OPT = {
+  a: { key: "a_so", mech: "a", tr: "so", name: "A · Exposed, sent-out", col: "--s1" },
+  b: { key: "a_ug", mech: "a", tr: "ug", name: "B · Exposed, UIGF", col: "--s3", dash: "6 4" },
+  c: { key: "b_so", mech: "b", tr: "so", name: "C · Capped, sent-out", col: "--s2" },
+  d: { key: "b_ug", mech: "b", tr: "ug", name: "D · Capped, UIGF", col: "--s7", dash: "6 4" },
+  e: { key: "c_so", mech: "c", tr: "so", name: "E · Volume knockout", col: "--s8" } };
+const AP = Object.fromEntries(OPTS.map(o => [o, OPT[o].name]));
+const FLOATDESC = o => ({ a: "spot", b: "spot clamped to floor–cap", c: "spot capped; no volume when spot < $0" })[OPT[o].mech];
 const TRN = { so: "Sent-out", ug: "UIGF on negative" }, TRS = { so: "sent-out", ug: "UIGF" };
 const tip = $("tip");
 function showTip(html, ev) {
@@ -66,8 +75,8 @@ const series = (f, id) => f.header.series.find(s => s.id === id);
 
 // ---------- state ----------
 const S = { tab: "farm", unit: null, y0: 0, y1: 0, units: "cf", showug: false, avg: "m",
-  k: 75, q: 100, cap: 600, floor: 0, tr: { a: "so", b: "ug", c: "so" }, risk: "p10",
-  ftech: "wind", freg: "", fk: 75, fr: 100, fpair: "dflt", fsort: { k: "net_b", d: -1 } };
+  k: 75, q: 100, cap: 600, floor: 0, risk: "p10",
+  ftech: "wind", freg: "", fk: 75, fr: 100, fsort: { k: "net_d", d: -1 } };
 let META, SETTLE, UNIT = new Map();
 const LAST = {};   // latest data behind each chart/table, for downloads
 const cache = new Map();
@@ -151,16 +160,10 @@ function wire() {
   const num = (id, key, f) => $(id).oninput = e => { const v = parseFloat(e.target.value); if (isFinite(v)) { S[key] = v; f(); } };
   num("k", "k", () => renderSettle()); num("q", "q", () => renderSettle()); num("cap", "cap", () => renderSettle()); num("floor", "floor", () => renderSettle());
   document.querySelectorAll("[data-risk]").forEach(b => b.onclick = () => { S.risk = b.dataset.risk; renderSettle(); });
-  document.querySelectorAll("[data-ap]").forEach(b => b.onclick = () => {
-    S.tr[b.dataset.ap] = b.dataset.tr;
-    document.querySelectorAll(`[data-ap="${b.dataset.ap}"]`).forEach(x => x.setAttribute("aria-pressed", x.dataset.tr === b.dataset.tr));
-    renderSettle();
-  });
   $("ft-w").onclick = () => { S.ftech = "wind"; setPressed("ft-w", "ft-s", true); renderFleet(); };
   $("ft-s").onclick = () => { S.ftech = "solar"; setPressed("ft-w", "ft-s", false); renderFleet(); };
   $("freg").onchange = e => { S.freg = e.target.value; renderFleet(); };
   num("fk", "fk", () => renderFleet()); num("fr", "fr", () => renderFleet());
-  $("fpair").onchange = e => { S.fpair = e.target.value; renderFleet(); };
   // unit picker
   const q = $("unitq"), list = $("unitlist");
   const fill = () => {
@@ -432,8 +435,8 @@ async function renderSettle() {
   let E; try { E = await loadUnit(); } catch (e) { $("stkpi").innerHTML = `<span class="err">${e.message}</span>`; return; }
   if (tok !== exToken) return; EX = E;
   const u = E.u;
-  $("bdesc").textContent = `Floating clamped to ${money(S.floor, 0)} – ${money(S.cap, 0)}`;
-  $("cdesc").textContent = `Floating capped at ${money(S.cap, 0)}; quantity 0 when price < $0`;
+  $("cdesc").textContent = $("ddesc").textContent = `Floating clamped to ${money(S.floor, 0)} – ${money(S.cap, 0)}`;
+  $("edesc").textContent = `Floating capped at ${money(S.cap, 0)}; no volume when price < $0`;
   const R = settle(E, S);
   const full = []; for (let w = 0; w < R.nW; w++) if (R.nint[w] >= 0.9 * 2016 && R.ok[w] >= 0.9 * 2016) full.push(w);
   const M = sum(R.merch), EG = sum(R.energy), MR = sum(R.merchRaw);
@@ -441,26 +444,26 @@ async function renderSettle() {
     const s = R["s_" + key], net = s.map((v, w) => v + R.merch[w]);
     const nf = full.map(w => net[w]).sort((a, b) => a - b);
     const ww = full.reduce((b, w) => net[w] < net[b] ? w : b, full[0]);
-    return { key, ap: key[0], tr: key.slice(2), S: sum(s), V: sum(R["v_" + key]), net: sum(net), sd: sd(nf), dsd: dsd(nf), p10: quant(nf, 0.1), tail: riskTail(nf), mean: mean(nf), worst: nf[0], worstWk: ww, weekly: net, s };
+    return { key, mech: key[0], tr: key.slice(2), S: sum(s), V: sum(R["v_" + key]), net: sum(net), sd: sd(nf), dsd: dsd(nf), p10: quant(nf, 0.1), tail: riskTail(nf), mean: mean(nf), worst: nf[0], worstWk: ww, weekly: net, s };
   };
-  const rows = KEYS.map(row);
-  const sel = { a: rows.find(r => r.key === "a_" + S.tr.a), b: rows.find(r => r.key === "b_" + S.tr.b), c: rows.find(r => r.key === "c_" + S.tr.c) };
+  const byKey = Object.fromEntries(KEYS.map(k => [k, row(k)]));
+  const rows = OPTS.map(o => ({ ...byKey[OPT[o].key], o }));
+  const sel = Object.fromEntries(rows.map(r => [r.o, r]));
   const mf = full.map(w => R.merch[w]).sort((a, b) => a - b), msd = sd(mf), mdsd = dsd(mf), mww = full.reduce((b, w) => R.merch[w] < R.merch[b] ? w : b, full[0]);
   const wkDate = w => w == null ? "" : `week from ${SETTLE.weeks[R.w0 + w]}`;
   $("stkpi").innerHTML = [
     ["Farm output", fmt(EG / 1000, 1) + " GWh", `${fmt(EG / (u.cap * R.nint.reduce((a, b) => a + b, 0) * H) * 100, 1)}% CF`],
     ["Merchant", money(M / 1e6, 2) + "M", `${money(M / EG, 1)}/MWh · floored at $0`],
-    ...["a", "b", "c"].map(a => [AP[a], money(sel[a].net / 1e6, 2) + "M", `${money(sel[a].net / EG, 1)}/MWh · settlement ${money(sel[a].S / 1e6, 2)}M`])
+    ...OPTS.map(a => [AP[a], money(sel[a].net / 1e6, 2) + "M", `${money(sel[a].net / EG, 1)}/MWh · settlement ${money(sel[a].S / 1e6, 2)}M`])
   ].map(([a, v, s]) => `<div class="kpi"><span>${a}</span><b>${v}</b><small>${s}</small></div>`).join("");
   // comparison table
-  $("cmps").textContent = `${u.name}, ${S.y0 === S.y1 ? S.y0 : S.y0 + "–" + S.y1} · K ${money(S.k, 2)}/MWh · Q ${fmt(S.q)} MW · weekly statistics over ${full.length} complete weeks (hover a worst-week value for its date) · ${RISK[S.risk].desc} · highlighted rows are the selected trace per approach`;
+  $("cmps").textContent = `${u.name}, ${S.y0 === S.y1 ? S.y0 : S.y0 + "–" + S.y1} · K ${money(S.k, 2)}/MWh · Q ${fmt(S.q)} MW · weekly statistics over ${full.length} complete weeks (hover a worst-week value for its date) · ${RISK[S.risk].desc}`;
   const tr = (cls, cells) => `<tr class="${cls}">${cells.join("")}</tr>`;
   const td = (v, d = 2, isMoney = true) => `<td class="${v < 0 ? "neg" : ""}">${isMoney ? money(v / 1e6, d) : fmt(v, d)}</td>`;
-  let h = `<table><thead><tr><th>Approach</th><th>Trace</th><th>Contract GWh</th><th>Settlement $M</th><th>Net revenue $M</th><th>Net $/MWh</th><th>vs merchant $/MWh</th><th>Weekly SD $k</th><th>Downside SD $k</th><th>Mean week $k</th><th>${RISK[S.risk].col} $k</th><th title="${RISK[S.risk].desc}">EaR $k</th><th>Worst week $k</th></tr></thead><tbody>`;
-  h += tr("", [`<td class="l"><span class="tag m">M</span>Merchant only</td>`, `<td class="l">–</td>`, `<td>–</td>`, `<td>–</td>`, td(M), `<td>${money(M / EG, 1)}</td>`, `<td>–</td>`, `<td>${fmt(msd / 1000, 0)}</td>`, `<td>${fmt(mdsd / 1000, 0)}</td>`, `<td>${money(mean(mf) / 1000, 0)}</td>`, `<td>${money(riskTail(mf) / 1000, 0)}</td>`, `<td>${fmt((mean(mf) - riskTail(mf)) / 1000, 0)}</td>`, `<td title="${wkDate(mww)}">${money(mf[0] / 1000, 0)}</td>`]);
+  let h = `<table><thead><tr><th>Option</th><th>Floating price</th><th>Trace</th><th>Contract GWh</th><th>Settlement $M</th><th>Net revenue $M</th><th>Net $/MWh</th><th>vs merchant $/MWh</th><th>Weekly SD $k</th><th>Downside SD $k</th><th>Mean week $k</th><th>${RISK[S.risk].col} $k</th><th title="${RISK[S.risk].desc}">EaR $k</th><th>Worst week $k</th></tr></thead><tbody>`;
+  h += tr("", [`<td class="l"><span class="tag m">M</span>Merchant only</td>`, `<td class="l">–</td>`, `<td class="l">–</td>`, `<td>–</td>`, `<td>–</td>`, td(M), `<td>${money(M / EG, 1)}</td>`, `<td>–</td>`, `<td>${fmt(msd / 1000, 0)}</td>`, `<td>${fmt(mdsd / 1000, 0)}</td>`, `<td>${money(mean(mf) / 1000, 0)}</td>`, `<td>${money(riskTail(mf) / 1000, 0)}</td>`, `<td>${fmt((mean(mf) - riskTail(mf)) / 1000, 0)}</td>`, `<td title="${wkDate(mww)}">${money(mf[0] / 1000, 0)}</td>`]);
   for (const r of rows) {
-    const d = sel[r.ap].key === r.key ? "dflt" : "";
-    h += tr(d, [`<td class="l"><span class="tag ${r.ap}">${r.ap.toUpperCase()}</span>${AP[r.ap].slice(4)}</td>`, `<td class="l">${TRN[r.tr]}</td>`, `<td>${fmt(r.V / 1000, 1)}</td>`, td(r.S), td(r.net),
+    h += tr("", [`<td class="l"><span class="tag ${r.o}">${r.o.toUpperCase()}</span>${AP[r.o].slice(4)}</td>`, `<td class="l">${FLOATDESC(r.o)}</td>`, `<td class="l">${TRN[r.tr]}</td>`, `<td>${fmt(r.V / 1000, 1)}</td>`, td(r.S), td(r.net),
       `<td>${money(r.net / EG, 1)}</td>`, `<td class="${(r.net - M) < 0 ? "neg" : ""}">${money((r.net - M) / EG, 1)}</td>`, `<td>${fmt(r.sd / 1000, 0)}</td>`, `<td>${fmt(r.dsd / 1000, 0)}</td>`, `<td>${money(r.mean / 1000, 0)}</td>`, `<td>${money(r.tail / 1000, 0)}</td>`, `<td>${fmt((r.mean - r.tail) / 1000, 0)}</td>`, `<td title="${wkDate(r.worstWk)}">${money(r.worst / 1000, 0)}</td>`]);
   }
   $("cmp").innerHTML = h + `</tbody></table>`;
@@ -468,36 +471,41 @@ async function renderSettle() {
   const W = Math.max(320, $("st1").clientWidth || 700);
   const wk = Array.from({ length: R.nW }, (_, w) => SETTLE.weeks[R.w0 + w] || "");
   const cum = a => { let c = 0; return a.map(v => (c += v) / 1e6); };
-  const lines = [{ name: "Merchant", color: css("--ink-3"), vals: cum(Array.from(R.merch)), dash: "4 3", width: 1.5 },
-    ...["a", "b", "c"].map((a, i) => ({ name: `${a.toUpperCase()} · ${S.tr[a] === "so" ? "SO" : "UIGF"}`, color: css(["--s1", "--s2", "--s7"][i]), vals: cum(sel[a].weekly) }))];
-  lineChart($("st1"), { xs: wk, series: lines, yfmt: v => v == null ? "–" : money(v, 1) + "M", w: W, h: 340, title: "Cumulative net revenue", xlab: i => `Week from ${wk[i]}` });
+  const lines = [{ key: "m", name: "Merchant", color: css("--ink-3"), vals: cum(Array.from(R.merch)), dash: "2 3", width: 1.5 },
+    ...OPTS.map(a => ({ key: a, name: a.toUpperCase(), color: css(OPT[a].col), vals: cum(sel[a].weekly), dash: OPT[a].dash }))];
+  const lgItems = series => series.map(x => ({ key: x.key, name: x.key === "m" ? "Merchant only" : AP[x.key], color: x.color, dash: !!x.dash }));
+  const drawCum = () => { lineChart($("st1"), { xs: wk, series: lines.filter(x => !hidden("st1").has(x.key)), yfmt: v => v == null ? "–" : money(v, 1) + "M", w: W, h: 340, title: "Cumulative net revenue", xlab: i => `Week from ${wk[i]}` });
+    legend($("st1"), "st1", lgItems(lines), drawCum); };
+  drawCum();
   const W3 = Math.max(320, $("st3").clientWidth || 1200);
   const inFull = new Set(full), keepW = (v, w) => inFull.has(w) ? v / 1000 : null;
-  const wkSeries = [{ key: "m", name: "Merchant", color: css("--ink-3"), vals: Array.from(R.merch, keepW), dash: "4 3", width: 1.5 },
-    ...["a", "b", "c"].map((a, i) => ({ key: a, name: `${a.toUpperCase()} · ${S.tr[a] === "so" ? "SO" : "UIGF"}`, color: css(["--s1", "--s2", "--s7"][i]), vals: Array.from(sel[a].weekly, keepW), width: 1.5 }))];
+  const wkSeries = [{ key: "m", name: "Merchant", color: css("--ink-3"), vals: Array.from(R.merch, keepW), dash: "2 3", width: 1.5 },
+    ...OPTS.map(a => ({ key: a, name: a.toUpperCase(), color: css(OPT[a].col), vals: Array.from(sel[a].weekly, keepW), width: 1.5, dash: OPT[a].dash }))];
   const drawWeekly = () => {
     lineChart($("st3"), { xs: wk, series: wkSeries.filter(x => !hidden("st3").has(x.key)), yfmt: v => v == null ? "–" : money(v, 0) + "k", w: W3, h: 380, title: "Weekly net revenue", xlab: i => `Week from ${wk[i]}` });
-    legend($("st3"), "st3", wkSeries.map(x => ({ key: x.key, name: x.key === "m" ? "Merchant only" : `${AP[x.key]} (${TRS[S.tr[x.key]]})`, color: x.color, dash: !!x.dash })), drawWeekly);
+    legend($("st3"), "st3", lgItems(wkSeries), drawWeekly);
   };
   drawWeekly();
   // distribution of weekly net revenue, complete weeks only
   const fw = a => full.map(w => a[w] / 1000);
   boxRows($("st4"), [["Merchant only", fw(R.merch), "m"],
-    ...["a", "b", "c"].map(a => [`${AP[a]} (${TRS[S.tr[a]]})`, fw(sel[a].weekly), a])], v => money(v, 0) + "k", Math.max(320, $("st4").clientWidth || 1200), "$k", { extremes: true, noun: "weeks", labelW: 290 });
-  $("st4s").textContent = `Weekly net revenue (merchant + settlement), $k · ${full.length} complete weeks · box = P25–P75, line = median, whisker = P10–P90, circles = worst and best week · selected trace per approach`;
-  // attribution bridge (A -> B and A -> C, each on its own selected trace)
-  const tb = S.tr.b, tc = S.tr.c, aB = rows.find(r => r.key === "a_" + tb), aC = rows.find(r => r.key === "a_" + tc);
-  const traceEffB = tb === S.tr.a ? 0 : aB.S - sel.a.S;
+    ...OPTS.map(a => [AP[a], fw(sel[a].weekly), a])], v => money(v, 0) + "k", Math.max(320, $("st4").clientWidth || 1200), "$k", { extremes: true, noun: "weeks", labelW: 250 });
+  $("st4s").textContent = `Weekly net revenue (merchant + settlement), $k · ${full.length} complete weeks · box = P25–P75, line = median, whisker = P10–P90, circles = worst and best week`;
+  // attribution bridge: from A, the effect of each rule alone
   const bridgeRows = [
-    { label: `A on ${TRS[S.tr.a]} trace`, v: sel.a.S, kind: "total" },
-    ...(traceEffB ? [{ label: `Switch to ${TRS[tb]} trace`, v: traceEffB, kind: "delta" }] : []),
-    { label: `Floor at ${money(S.floor, 0)}`, v: R.att[tb].floor, kind: "delta" },
-    { label: `Cap at ${money(S.cap, 0)}`, v: R.att[tb].cap, kind: "delta" },
-    { label: `= B on ${TRS[tb]} trace`, v: sel.b.S, kind: "total" },
-    { label: `A on ${TRS[tc]} trace`, v: aC.S, kind: "total" },
-    { label: `Knock out negative-price volume`, v: R.att[tc].ko, kind: "delta" },
-    { label: `Cap at ${money(S.cap, 0)}`, v: R.att[tc].kocap, kind: "delta" },
-    { label: `= C on ${TRS[tc]} trace`, v: sel.c.S, kind: "total" }];
+    { label: "A · exposed, sent-out", v: sel.a.S, kind: "total" },
+    { label: "Switch to the UIGF trace", v: sel.b.S - sel.a.S, kind: "delta" },
+    { label: "= B · exposed, UIGF", v: sel.b.S, kind: "total" },
+    { label: "A · exposed, sent-out", v: sel.a.S, kind: "total" },
+    { label: `Floor at ${money(S.floor, 0)}`, v: R.att.so.floor, kind: "delta" },
+    { label: `Cap at ${money(S.cap, 0)}`, v: R.att.so.cap, kind: "delta" },
+    { label: "= C · capped, sent-out", v: sel.c.S, kind: "total" },
+    { label: "Switch to the UIGF trace", v: sel.d.S - sel.c.S, kind: "delta" },
+    { label: "= D · capped, UIGF", v: sel.d.S, kind: "total" },
+    { label: "A · exposed, sent-out", v: sel.a.S, kind: "total" },
+    { label: "Knock out negative-price volume", v: R.att.so.ko, kind: "delta" },
+    { label: `Cap at ${money(S.cap, 0)}`, v: R.att.so.kocap, kind: "delta" },
+    { label: "= E · volume knockout", v: sel.e.S, kind: "total" }];
   $("st2s").textContent = `Settlement $M for the period · each step is the change in settlement from that rule alone`;
   bridge($("st2"), bridgeRows, Math.max(320, $("st2").clientWidth || 700));
   // mean vs earnings-at-risk across contract volume: settlement is linear in Q, so scale a 1 MW settlement
@@ -505,16 +513,16 @@ async function renderSettle() {
   const perMW = a => { const r = sel[a]; return R1 ? R1["s_" + r.key] : r.s.map(v => v / S.q); };
   const PCTS = Array.from({ length: 21 }, (_, i) => i * 10);
   const stat = arr => { const s = arr.slice().sort((x, y) => x - y), m = mean(s), t = riskTail(s); return { mean: m, p10: t, ear: m - t }; };
-  const sweep = ["a", "b", "c"].map(a => { const pm = perMW(a); return { a, tr: S.tr[a], pts: PCTS.map(pct => { const q = pct / 100 * u.cap; return { pct, q, ...stat(full.map(w => R.merch[w] + q * pm[w])) }; }), cur: { pct: S.q / u.cap * 100, q: S.q, ...stat(full.map(w => R.merch[w] + S.q * pm[w])) } }; });
-  $("st5s").textContent = `Mean weekly net revenue vs earnings-at-risk, $k/week · ${RISK[S.risk].desc} · ${full.length} complete weeks · contract volume 0–200% of ${fmt(u.cap, 0)} MW in 10% steps (0% = merchant) · K ${money(S.k, 2)}/MWh, cap ${money(S.cap, 0)}, floor ${money(S.floor, 0)} · selected trace per approach · filled marker = current Q`;
+  const sweep = OPTS.map(a => { const pm = perMW(a); return { a, tr: OPT[a].tr, pts: PCTS.map(pct => { const q = pct / 100 * u.cap; return { pct, q, ...stat(full.map(w => R.merch[w] + q * pm[w])) }; }), cur: { pct: S.q / u.cap * 100, q: S.q, ...stat(full.map(w => R.merch[w] + S.q * pm[w])) } }; });
+  $("st5s").textContent = `Mean weekly net revenue vs earnings-at-risk, $k/week · ${RISK[S.risk].desc} · ${full.length} complete weeks · contract volume 0–200% of ${fmt(u.cap, 0)} MW in 10% steps (0% = merchant) · K ${money(S.k, 2)}/MWh, cap ${money(S.cap, 0)}, floor ${money(S.floor, 0)} · filled marker = current Q`;
   document.querySelectorAll("[data-risk]").forEach(b => b.setAttribute("aria-pressed", b.dataset.risk === S.risk));
-  const W5 = Math.max(320, $("st5").clientWidth || 1200), earCol = { a: css("--s1"), b: css("--s2"), c: css("--s7") };
+  const W5 = Math.max(320, $("st5").clientWidth || 1200), earCol = Object.fromEntries(OPTS.map(o => [o, css(OPT[o].col)]));
   const drawEar = () => {
     earChart($("st5"), sweep.filter(x => !hidden("st5").has(x.a)), W5);
-    legend($("st5"), "st5", sweep.map(x => ({ key: x.a, name: `${AP[x.a]} (${TRS[x.tr]})`, color: earCol[x.a] })), drawEar);
+    legend($("st5"), "st5", sweep.map(x => ({ key: x.a, name: AP[x.a], color: earCol[x.a], dash: !!OPT[x.a].dash })), drawEar);
   };
   drawEar();
-  LAST.settle = { R, rows, full, bridgeRows, sweep, u, M, EG, p: { k: S.k, q: S.q, cap: S.cap, floor: S.floor, tr: { ...S.tr }, risk: S.risk } };
+  LAST.settle = { R, rows, full, bridgeRows, sweep, u, M, EG, p: { k: S.k, q: S.q, cap: S.cap, floor: S.floor, risk: S.risk } };
   window.__settle = { R, rows, M, EG };   // exposed for verification
 }
 
@@ -524,45 +532,44 @@ function renderFleet() {
   const from = `${S.y0}-01-01`, to = `${S.y1 + 1}-01-01`;
   const wks = []; weeks.forEach((d, w) => { if (d >= from && d < to) wks.push(w); });
   const fi = n => uf.indexOf(n), ri = n => rf.indexOf(n);
-  const pair = S.fpair === "dflt" ? { a: "so", b: "ug", c: "so" } : { a: S.fpair, b: S.fpair, c: S.fpair };
   const rows = [];
   for (const u of META.units) {
     if (u.tech !== S.ftech || (S.freg && u.region !== S.freg)) continue;
     const r = META.rt.findIndex(x => x.region === u.region && x.tech === u.tech); if (r < 0) continue;
     const ub = u.gi * uf.length * W, rb = r * rf.length * W;
-    let EG = 0, MG = 0; const mw = [], nets = { a: [], b: [], c: [] }, tot = { a: 0, b: 0, c: 0 };
+    let EG = 0, MG = 0; const mw = [], nets = Object.fromEntries(OPTS.map(o => [o, []])), tot = Object.fromEntries(OPTS.map(o => [o, 0]));
     for (const w of wks) {
       if (U[ub + fi("nvalid") * W + w] < 0.9 * 2016 || RR[rb + ri("nint") * W + w] < 0.9 * 2016) continue;
       const eg = U[ub + fi("EG") * W + w], mg = U[ub + fi("MG") * W + w];
       EG += eg; MG += mg; mw.push(mg / u.cap);
-      for (const a of ["a", "b", "c"]) {
-        const an = { a: 1, b: 2, c: 3 }[a];
-        const A = RR[rb + ri(`${pair[a]}_a${an}_A`) * W + w], B = RR[rb + ri(`${pair[a]}_a${an}_B`) * W + w];
+      for (const a of OPTS) {
+        const an = { a: 1, b: 2, c: 3 }[OPT[a].mech], t = OPT[a].tr;
+        const A = RR[rb + ri(`${t}_a${an}_A`) * W + w], B = RR[rb + ri(`${t}_a${an}_B`) * W + w];
         const s = (S.fr / 100) * u.cap * (S.fk * A - B);
         tot[a] += s; nets[a].push((mg + s) / u.cap);
       }
     }
     if (mw.length < 4 || EG <= 0) continue;
     const msd = dsd(mw);
-    rows.push({ u, n: mw.length, EG, cf: EG / (u.cap * mw.length * 168), merch: MG / EG,
-      net_a: (MG + tot.a) / EG, net_b: (MG + tot.b) / EG, net_c: (MG + tot.c) / EG,
-      red_a: dsd(nets.a) / msd - 1, red_b: dsd(nets.b) / msd - 1, red_c: dsd(nets.c) / msd - 1 });
+    const r0 = { u, n: mw.length, EG, cf: EG / (u.cap * mw.length * 168), merch: MG / EG };
+    for (const o of OPTS) { r0["net_" + o] = (MG + tot[o]) / EG; r0["red_" + o] = dsd(nets[o]) / msd - 1; }
+    rows.push(r0);
   }
   const per = S.y0 === S.y1 ? S.y0 : `${S.y0}–${S.y1}`;
   $("fl1s").textContent = `${rows.length} ${S.ftech} assets${S.freg ? " in " + S.freg : ""}, ${per} · $/MWh of each asset's own output · K ${money(S.fk, 0)} · contract ${fmt(S.fr)}% of capacity`;
   const W1 = Math.max(320, $("fl1").clientWidth || 700);
-  boxRows($("fl1"), [["Merchant", rows.map(r => r.merch), "m"], [AP.a, rows.map(r => r.net_a), "a"], [AP.b, rows.map(r => r.net_b), "b"], [AP.c, rows.map(r => r.net_c), "c"]], v => money(v, 0), W1, "$/MWh");
-  boxRows($("fl2"), [[AP.a, rows.map(r => r.red_a * 100), "a"], [AP.b, rows.map(r => r.red_b * 100), "b"], [AP.c, rows.map(r => r.red_c * 100), "c"]], v => (v > 0 ? "+" : "") + fmt(v, 0) + "%", W1, "%");
-  const cols = [["name", "Asset"], ["region", "Region"], ["cap", "MW"], ["cf", "CF"], ["merch", "Merchant $/MWh"], ["net_a", "A net $/MWh"], ["net_b", "B net $/MWh"], ["net_c", "C net $/MWh"], ["red_a", "A downside SD vs merchant"], ["red_b", "B downside SD vs merchant"], ["red_c", "C downside SD vs merchant"], ["n", "Weeks"]];
+  boxRows($("fl1"), [["Merchant", rows.map(r => r.merch), "m"], ...OPTS.map(o => [AP[o], rows.map(r => r["net_" + o]), o])], v => money(v, 0), W1, "$/MWh", { labelW: 220 });
+  boxRows($("fl2"), OPTS.map(o => [AP[o], rows.map(r => r["red_" + o] * 100), o]), v => (v > 0 ? "+" : "") + fmt(v, 0) + "%", W1, "%", { labelW: 220 });
+  const cols = [["name", "Asset"], ["region", "Region"], ["cap", "MW"], ["cf", "CF"], ["merch", "Merchant $/MWh"], ...OPTS.map(o => ["net_" + o, `${o.toUpperCase()} net $/MWh`]), ...OPTS.map(o => ["red_" + o, `${o.toUpperCase()} downside SD vs merchant`]), ["n", "Weeks"]];
   const val = (r, k) => k === "name" ? r.u.name : k === "region" ? r.u.region : k === "cap" ? r.u.cap : r[k];
   const { k, d } = S.fsort;
   rows.sort((a, b) => { const x = val(a, k), y = val(b, k); return (typeof x === "string" ? x.localeCompare(y) : x - y) * d; });
   const pc = v => `${fmt(v * 100, 0)}%`, pcs = v => `${v > 0 ? "+" : ""}${fmt(v * 100, 0)}%`;
   $("fl3").innerHTML = `<table><thead><tr>${cols.map(([c, l]) => `<th data-k="${c}">${l}${c === k ? (d > 0 ? " ▲" : " ▼") : ""}</th>`).join("")}</tr></thead><tbody>${rows.map(r =>
-    `<tr data-id="${r.u.id}" class="${r.u.id === S.unit ? "sel" : ""}"><td>${r.u.name}</td><td>${r.u.region.replace("1", "")}</td><td>${fmt(r.u.cap)}</td><td>${pc(r.cf)}</td><td>${money(r.merch, 1)}</td><td>${money(r.net_a, 1)}</td><td>${money(r.net_b, 1)}</td><td>${money(r.net_c, 1)}</td><td>${pcs(r.red_a)}</td><td>${pcs(r.red_b)}</td><td>${pcs(r.red_c)}</td><td>${r.n}</td></tr>`).join("")}</tbody></table>`;
+    `<tr data-id="${r.u.id}" class="${r.u.id === S.unit ? "sel" : ""}"><td>${r.u.name}</td><td>${r.u.region.replace("1", "")}</td><td>${fmt(r.u.cap)}</td><td>${pc(r.cf)}</td><td>${money(r.merch, 1)}</td>${OPTS.map(o => `<td>${money(r["net_" + o], 1)}</td>`).join("")}${OPTS.map(o => `<td>${pcs(r["red_" + o])}</td>`).join("")}<td>${r.n}</td></tr>`).join("")}</tbody></table>`;
   $("fl3").querySelectorAll("th").forEach(th => th.onclick = () => { const c = th.dataset.k; S.fsort = { k: c, d: S.fsort.k === c ? -S.fsort.d : (c === "name" || c === "region" ? 1 : -1) }; renderFleet(); });
   $("fl3").querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => { selectUnit(tr.dataset.id, false); document.querySelector('[data-tab="farm"]').click(); });
-  LAST.fleet = { rows, p: { k: S.fk, r: S.fr, pair: S.fpair, tech: S.ftech, reg: S.freg } };
+  LAST.fleet = { rows, p: { k: S.fk, r: S.fr, tech: S.ftech, reg: S.freg } };
   window.__fleet = rows;
 }
 // clickable legend under a chart: toggles series on and off (at least one stays on); state survives redraws
@@ -577,7 +584,7 @@ function legend(el, id, items, redraw) {
   el.appendChild(box);
 }
 function earChart(el, sweep, w) {
-  const h = 460, L = 78, Rr = 150, T = 18, B = 52, col = { a: "var(--s1)", b: "var(--s2)", c: "var(--s7)" };
+  const h = 460, L = 78, Rr = 150, T = 18, B = 52, col = Object.fromEntries(OPTS.map(o => [o, `var(${OPT[o].col})`]));
   const pts = sweep.flatMap(s => s.pts.concat([s.cur])).filter(p => isFinite(p.mean) && isFinite(p.ear));
   if (!pts.length) { el.innerHTML = `<p class="note">No complete weeks in this period.</p>`; return; }
   const k = v => v / 1000, xs = pts.map(p => k(p.ear)), ys = pts.map(p => k(p.mean));
@@ -594,17 +601,17 @@ function earChart(el, sweep, w) {
   const hit = [];
   sweep.forEach(s => {
     const P = s.pts.filter(p => isFinite(p.mean) && isFinite(p.ear));
-    g += `<polyline fill="none" stroke="${col[s.a]}" stroke-width="2" points="${P.map(p => `${X(k(p.ear))},${Y(k(p.mean))}`).join(" ")}"/>`;
+    g += `<polyline fill="none" stroke="${col[s.a]}" stroke-width="2" ${OPT[s.a].dash ? `stroke-dasharray="${OPT[s.a].dash}"` : ""} points="${P.map(p => `${X(k(p.ear))},${Y(k(p.mean))}`).join(" ")}"/>`;
     P.forEach(p => { const big = p.pct % 50 === 0; g += `<circle cx="${X(k(p.ear))}" cy="${Y(k(p.mean))}" r="${big ? 4 : 2.75}" fill="var(--surface)" stroke="${col[s.a]}" stroke-width="1.5"/>`; hit.push([s, p]);
-      if (big && p.pct > 0) { const [dx, dy, an] = { a: [8, 16, "start"], b: [-8, -8, "end"], c: [8, -8, "start"] }[s.a]; g += `<text x="${X(k(p.ear)) + dx}" y="${Y(k(p.mean)) + dy}" text-anchor="${an}" font-size="11.5" class="num" fill="${col[s.a]}">${p.pct}%</text>`; } });
+      if (big && p.pct > 0) { const [dx, dy, an] = { a: [8, 16, "start"], b: [-8, -8, "end"], c: [8, -8, "start"], d: [-8, 16, "end"], e: [8, 4, "start"] }[s.a]; g += `<text x="${X(k(p.ear)) + dx}" y="${Y(k(p.mean)) + dy}" text-anchor="${an}" font-size="11.5" class="num" fill="${col[s.a]}">${p.pct}%</text>`; } });
     if (isFinite(s.cur.mean)) { g += `<circle cx="${X(k(s.cur.ear))}" cy="${Y(k(s.cur.mean))}" r="6" fill="${col[s.a]}" stroke="var(--surface)" stroke-width="1.5"/>`; hit.push([s, s.cur, true]); }
-    const e = P.at(-1); if (e) g += `<text x="${X(k(e.ear)) + 10}" y="${Y(k(e.mean)) + (s.a === "a" ? 34 : 16)}" font-size="12.5" font-weight="600" fill="${col[s.a]}">${s.a.toUpperCase()} · ${TRS[s.tr]}</text>`;
+    const e = P.at(-1); if (e) g += `<text x="${X(k(e.ear)) + 10}" y="${Y(k(e.mean)) + ({ a: 34, b: 16, c: 16, d: 34, e: 16 })[s.a]}" font-size="12.5" font-weight="600" fill="${col[s.a]}">${s.a.toUpperCase()}</text>`;
   });
   const m0 = sweep[0] && sweep[0].pts[0]; if (m0 && isFinite(m0.mean)) g += `<text x="${X(k(m0.ear))}" y="${Y(k(m0.mean)) + 22}" text-anchor="middle" font-size="12" fill="var(--ink-3)">0% = merchant</text>`;
   hit.forEach(([s, p, cur], i) => g += `<circle data-i="${i}" cx="${X(k(p.ear))}" cy="${Y(k(p.mean))}" r="9" fill="transparent"/>`);
   el.innerHTML = svgEl(w, h, g, "Mean weekly net revenue against earnings-at-risk by contract volume");
   el.querySelectorAll("circle[data-i]").forEach(n => { const [s, p, cur] = hit[+n.dataset.i];
-    n.onmousemove = ev => showTip(`<b>${AP[s.a]} (${TRS[s.tr]})${cur ? " · current Q" : ""}</b><div class="num">Volume ${fmt(p.pct, 0)}% · ${fmt(p.q, 1)} MW</div><div class="num">Mean ${money(p.mean / 1000, 1)}k/week</div><div class="num">${RISK[S.risk].col} ${money(p.p10 / 1000, 1)}k · EaR ${money(p.ear / 1000, 1)}k</div>`, ev);
+    n.onmousemove = ev => showTip(`<b>${AP[s.a]}${cur ? " · current Q" : ""}</b><div class="num">Volume ${fmt(p.pct, 0)}% · ${fmt(p.q, 1)} MW</div><div class="num">Mean ${money(p.mean / 1000, 1)}k/week</div><div class="num">${RISK[S.risk].col} ${money(p.p10 / 1000, 1)}k · EaR ${money(p.ear / 1000, 1)}k</div>`, ev);
     n.onmouseleave = hideTip; });
 }
 function boxRows(el, groups, f, w, unit, opt = {}) {   // opt: { extremes: draw min/max and scale to them, noun: "assets" | "weeks" }
@@ -614,7 +621,7 @@ function boxRows(el, groups, f, w, unit, opt = {}) {   // opt: { extremes: draw 
   const ticks = niceTicks(Math.min(lo0, 0), Math.max(hi0, 0), 6), a = Math.min(ticks[0], lo0), b = Math.max(ticks.at(-1), hi0, a + 1e-9), X = v => L + (Math.max(a, Math.min(b, v)) - a) / (b - a) * (w - L - Rr);
   let g = "";
   ticks.forEach(t => g += `<line x1="${X(t)}" x2="${X(t)}" y1="${T - 6}" y2="${h - 6}" stroke="var(--rule-2)"/><text x="${X(t)}" y="${T - 10}" text-anchor="middle" font-size="12.5" class="num" fill="var(--ink-3)">${f(t)}</text>`);
-  const col = { m: "var(--ink-3)", a: "var(--s1)", b: "var(--s2)", c: "var(--s7)" };
+  const col = { m: "var(--ink-3)", ...Object.fromEntries(OPTS.map(o => [o, `var(${OPT[o].col})`])) };
   groups.forEach(([name, vals, c], i) => {
     const s = vals.filter(isFinite).sort((x, y) => x - y), y = T + i * rh + rh / 2;
     if (!s.length) return;
@@ -711,33 +718,33 @@ function avgCsv() {
 function weeklyCsv() {
   const L = LAST.settle; if (!L) return; const { R, rows, full, p } = L, inFull = new Set(full);
   const head = ["week_start", "complete_week", "fixed_price", "contract_mw", "cap", "floor", "farm_mwh", "merchant_floored", "merchant_unfloored"];
-  rows.forEach(r => head.push(`${r.key}_contract_mwh`, `${r.key}_settlement`, `${r.key}_net`));
+  rows.forEach(r => head.push(`${r.o}_contract_mwh`, `${r.o}_settlement`, `${r.o}_net`));
   const out = [];
   for (let w = 0; w < R.nW; w++) { const line = [SETTLE.weeks[R.w0 + w], inFull.has(w) ? 1 : 0, p.k, p.q, p.cap, p.floor, R.energy[w], R.merch[w], R.merchRaw[w]]; rows.forEach(r => line.push(R["v_" + r.key][w], r.s[w], r.weekly[w])); out.push(line); }
   saveCsv(fileBase("weekly-settlement"), head, out);
 }
 function cmpCsv() {
   const L = LAST.settle; if (!L) return; const { rows, M, EG, p } = L;
-  saveCsv(fileBase("approach-comparison"), ["approach", "trace", "selected", "contract_mwh", "settlement", "net_revenue", "net_per_mwh", "vs_merchant_per_mwh", "weekly_sd", "weekly_downside_sd", "mean_week", "p10_week", "cvar10_week", "ear_p10", "ear_cvar10", "ear_parametric", "worst_week", "worst_week_start"],
+  saveCsv(fileBase("option-comparison"), ["option", "floating_price", "trace", "contract_mwh", "settlement", "net_revenue", "net_per_mwh", "vs_merchant_per_mwh", "weekly_sd", "weekly_downside_sd", "mean_week", "p10_week", "cvar10_week", "ear_p10", "ear_cvar10", "ear_parametric", "worst_week", "worst_week_start"],
     [(() => { const mf = L.full.map(w => L.R.merch[w]).sort((a, b) => a - b), m = mean(mf); return ["merchant", "", "", "", "", M, M / EG, 0, sd(mf), dsd(mf), m, quant(mf, 0.1), cvar(mf), m - quant(mf, 0.1), m - cvar(mf), Z10 * sd(mf), mf[0], ""]; })(),
-     ...rows.map(r => { const nf = L.full.map(w => r.weekly[w]).sort((a, b) => a - b); return [AP[r.ap], TRN[r.tr], p.tr[r.ap] === r.tr ? 1 : 0, r.V, r.S, r.net, r.net / EG, (r.net - M) / EG, r.sd, r.dsd, r.mean, r.p10, cvar(nf), r.mean - r.p10, r.mean - cvar(nf), Z10 * r.sd, r.worst, SETTLE.weeks[L.R.w0 + r.worstWk]]; })]);
+     ...rows.map(r => { const nf = L.full.map(w => r.weekly[w]).sort((a, b) => a - b); return [AP[r.o], FLOATDESC(r.o), TRN[r.tr], r.V, r.S, r.net, r.net / EG, (r.net - M) / EG, r.sd, r.dsd, r.mean, r.p10, cvar(nf), r.mean - r.p10, r.mean - cvar(nf), Z10 * r.sd, r.worst, SETTLE.weeks[L.R.w0 + r.worstWk]]; })]);
 }
 function earCsv() {
   const L = LAST.settle; if (!L) return; const { sweep, p, u } = L;
-  saveCsv(fileBase("mean-vs-earnings-at-risk"), ["approach", "trace", "volume_pct_of_capacity", "contract_mw", "mean_week", "tail_week", "earnings_at_risk", "risk_measure", "is_current_q", "fixed_price", "cap", "floor", "capacity_mw"],
+  saveCsv(fileBase("mean-vs-earnings-at-risk"), ["option", "trace", "volume_pct_of_capacity", "contract_mw", "mean_week", "tail_week", "earnings_at_risk", "risk_measure", "is_current_q", "fixed_price", "cap", "floor", "capacity_mw"],
     sweep.flatMap(s => s.pts.map(x => [AP[s.a], TRN[s.tr], x.pct, x.q, x.mean, x.p10, x.ear, RISK[p.risk].label, 0, p.k, p.cap, p.floor, u.cap]).concat([[AP[s.a], TRN[s.tr], s.cur.pct, s.cur.q, s.cur.mean, s.cur.p10, s.cur.ear, RISK[p.risk].label, 1, p.k, p.cap, p.floor, u.cap]])));
 }
 function bridgeCsv() { const L = LAST.settle; if (!L) return; saveCsv(fileBase("settlement-attribution"), ["step", "kind", "settlement"], L.bridgeRows.map(r => [r.label, r.kind, r.v])); }
 function boxCsv() {
   const L = LAST.settle; if (!L) return; const { R, full, rows, p } = L;
-  const series = [["merchant", Array.from(full, w => R.merch[w])], ...["a", "b", "c"].map(a => { const r = rows.find(x => x.key === `${a}_${p.tr[a]}`); return [`${AP[a]} (${TRS[p.tr[a]]})`, full.map(w => r.weekly[w])]; })];
+  const series = [["merchant", Array.from(full, w => R.merch[w])], ...rows.map(r => [AP[r.o], full.map(w => r.weekly[w])])];
   saveCsv(fileBase("weekly-net-distribution"), ["series", "weeks", "min", "p10", "p25", "median", "p75", "p90", "max", "mean", "sd", "downside_sd"],
     series.map(([n, v]) => { const s = v.slice().sort((a, b) => a - b); return [n, s.length, s[0], quant(s, .1), quant(s, .25), quant(s, .5), quant(s, .75), quant(s, .9), s.at(-1), s.reduce((a, b) => a + b, 0) / s.length, sd(s), dsd(s)]; }));
 }
 function fleetCsv() {
   const F = LAST.fleet; if (!F) return;
-  saveCsv(fileBase("fleet"), ["duid", "name", "region", "tech", "capacity_mw", "weeks", "cf", "merchant_per_mwh", "a_net_per_mwh", "b_net_per_mwh", "c_net_per_mwh", "a_downside_sd_vs_merchant", "b_downside_sd_vs_merchant", "c_downside_sd_vs_merchant", "fixed_price", "contract_pct_capacity", "trace_pairing"],
-    F.rows.map(r => [r.u.id, r.u.name, r.u.region, r.u.tech, r.u.cap, r.n, r.cf, r.merch, r.net_a, r.net_b, r.net_c, r.red_a, r.red_b, r.red_c, F.p.k, F.p.r, F.p.pair]));
+  saveCsv(fileBase("fleet"), ["duid", "name", "region", "tech", "capacity_mw", "weeks", "cf", "merchant_per_mwh", ...OPTS.map(o => `${o}_net_per_mwh`), ...OPTS.map(o => `${o}_downside_sd_vs_merchant`), "fixed_price", "contract_pct_capacity"],
+    F.rows.map(r => [r.u.id, r.u.name, r.u.region, r.u.tech, r.u.cap, r.n, r.cf, r.merch, ...OPTS.map(o => r["net_" + o]), ...OPTS.map(o => r["red_" + o]), F.p.k, F.p.r]));
 }
 const EXPORTS = {
   p1: { png: (pn, n) => plots[0] && uplotPng(plots[0], pn, n), csv: farmCsv },
