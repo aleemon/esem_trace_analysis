@@ -270,7 +270,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
       </div>
       <div class="stack">
         <div class="kpis" id="stkpi" style="margin:0"></div>
-        <div class="panel"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">All contract options</h3><span style="display:inline-flex;gap:8px;align-items:center"><span class="rl">EaR measure</span><div class="seg" role="group" aria-label="Earnings-at-risk measure"><button data-risk="p10" aria-pressed="true">P10</button><button data-risk="cvar" aria-pressed="false">CVaR 10%</button><button data-risk="param" aria-pressed="false">Parametric</button></div></span></div><p class="sub" id="cmps"></p><div class="tblwrap" id="cmp" style="max-height:none"></div></div>
+        <div class="panel"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">All contract options</h3></div><p class="sub" id="cmps"></p><div class="tblwrap" id="cmp" style="max-height:none"></div></div>
       </div>
     </div>
     <div class="grid g2" style="margin-top:14px">
@@ -278,7 +278,7 @@ td.l{text-align:left;font-family:var(--f-ui)}
       <div class="panel"><h3>What moves settlement between options</h3><p class="sub" id="st2s"></p><div id="st2"></div></div>
       <div class="panel" style="grid-column:1/-1"><h3>Distribution of weekly net revenue</h3><p class="sub" id="st4s"></p><div id="st4"></div></div>
       <div class="panel" style="grid-column:1/-1"><h3>Weekly net revenue</h3><p class="sub">$k per week · merchant vs each option · complete weeks only (the same weeks as the table's statistics); partial weeks at the period edges are hidden here but included in totals</p><div id="st3"></div></div>
-      <div class="panel" style="grid-column:1/-1"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Mean earnings vs earnings-at-risk by contract volume</h3><span style="display:inline-flex;gap:8px;align-items:center"><span class="rl">EaR measure</span><div class="seg" role="group" aria-label="Earnings-at-risk measure"><button data-risk="p10" aria-pressed="true">P10</button><button data-risk="cvar" aria-pressed="false">CVaR 10%</button><button data-risk="param" aria-pressed="false">Parametric</button></div></span></div><p class="sub" id="st5s"></p><div id="st5"></div></div>
+      <div class="panel" style="grid-column:1/-1"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Mean earnings vs earnings-at-risk by contract volume</h3></div><p class="sub" id="st5s"></p><div id="st5"></div></div>
     </div>
   </section>
 
@@ -325,12 +325,12 @@ td.l{text-align:left;font-family:var(--f-ui)}
       </div>
     </div>
     <div id="pf-results">
-      <div class="panel" style="margin-top:14px"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Portfolio: all contract options</h3><span style="display:inline-flex;gap:8px;align-items:center"><span class="rl">EaR measure</span><div class="seg" role="group" aria-label="Earnings-at-risk measure"><button data-prisk="p10" aria-pressed="true">P10</button><button data-prisk="cvar" aria-pressed="false">CVaR 10%</button><button data-prisk="param" aria-pressed="false">Parametric</button></div></span></div><p class="sub" id="pf-tbls"></p><div class="tblwrap" id="pf-tbl" style="max-height:none"></div></div>
+      <div class="panel" style="margin-top:14px"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Portfolio: all contract options</h3></div><p class="sub" id="pf-tbls"></p><div class="tblwrap" id="pf-tbl" style="max-height:none"></div></div>
       <div class="grid g2" style="margin-top:14px">
         <div class="panel"><h3>Portfolio cumulative net revenue</h3><p class="sub">Merchant plus contract settlement across all assets, $M · common complete weeks · each contract option</p><div id="pf1"></div></div>
         <div class="panel"><h3>Distribution of portfolio weekly net revenue</h3><p class="sub" id="pf2s"></p><div id="pf2"></div></div>
         <div class="panel" style="grid-column:1/-1"><h3>Portfolio weekly net revenue</h3><p class="sub">$k per week · merchant vs each option across all assets · common complete weeks</p><div id="pf3"></div></div>
-        <div class="panel" style="grid-column:1/-1"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Portfolio mean earnings vs earnings-at-risk by contract volume</h3><span style="display:inline-flex;gap:8px;align-items:center"><span class="rl">EaR measure</span><div class="seg" role="group" aria-label="Earnings-at-risk measure"><button data-prisk="p10" aria-pressed="true">P10</button><button data-prisk="cvar" aria-pressed="false">CVaR 10%</button><button data-prisk="param" aria-pressed="false">Parametric</button></div></span></div><p class="sub" id="pf4s"></p><div id="pf4"></div></div>
+        <div class="panel" style="grid-column:1/-1"><div class="toolbar" style="justify-content:space-between;margin-bottom:4px"><h3 style="margin:0">Portfolio mean earnings vs earnings-at-risk by contract volume</h3></div><p class="sub" id="pf4s"></p><div id="pf4"></div></div>
       </div>
     </div>
   </section>
@@ -594,10 +594,9 @@ td.l{text-align:left;font-family:var(--f-ui)}
      <tbody>
       <tr><td>Weekly SD</td><td>Sample standard deviation of weekly net revenue. Counts upside and downside alike.</td></tr>
       <tr><td>Downside SD</td><td>√ mean(min(x − mean, 0)²): only weeks below the mean contribute, so a few very good weeks don't count as risk.</td></tr>
-      <tr><td>P10</td><td>The 10th-percentile week: 10% of weeks fall below it. With about 50 weeks a year it sits between the 5th and 6th worst week, so it can jump as weeks re-rank.</td></tr>
+      <tr><td>P10</td><td>Used for the box-plot whiskers and shown in the CSV downloads. The 10th-percentile week: 10% of weeks fall below it. With about 50 weeks a year it sits between the 5th and 6th worst week, so it can jump as weeks re-rank.</td></tr>
       <tr><td>CVaR 10%</td><td>The average of the worst 10% of weeks (fractionally weighted at the boundary). Smoother than P10 and sensitive to how bad the tail is, not just where it starts.</td></tr>
-      <tr><td>Parametric</td><td>Mean − 1.28 × SD: the 10th percentile if weekly revenue were normally distributed. Perfectly smooth, but it treats upside as risk and misses skew. It overstates risk when revenue is right-skewed (low contract volume) and understates it when a fat left tail appears (high volume under option A).</td></tr>
-      <tr><td>Earnings-at-risk (EaR)</td><td>Mean week − the selected tail measure: how far a bad week falls short of a typical one. Choose the measure with the toggle on the table or the chart.</td></tr>
+      <tr><td>Earnings-at-risk (EaR)</td><td>Mean week − CVaR 10%: how far the average of the worst 10% of weeks falls short of a typical week. Every EaR figure and frontier curve on the site uses this measure.</td></tr>
      </tbody>
     </table>
 

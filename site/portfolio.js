@@ -24,7 +24,6 @@ function pfInit() {
   num("pf-cap", "cap"); num("pf-floor", "floor");
   $("pf-dk").oninput = e => { const v = parseFloat(e.target.value); if (isFinite(v)) { PF.dk = v; pfSave(); } };
   $("pf-dq").oninput = e => { const v = parseFloat(e.target.value); if (isFinite(v)) { PF.dq = v; pfSave(); } };
-  document.querySelectorAll("[data-prisk]").forEach(b => b.onclick = () => { S.risk = b.dataset.prisk; renderPortfolio(); });
   $("pf-allk").onclick = () => { PF.assets.forEach(a => a.k = PF.dk); pfSave(); renderPortfolio(); };
   $("pf-allq").onclick = () => { PF.assets.forEach(a => a.q = Math.round(UNIT.get(a.id).cap * PF.dq / 100)); pfSave(); renderPortfolio(); };
   $("pf-clear").onclick = () => { PF.assets = []; pfSave(); renderPortfolio(); };
@@ -87,7 +86,6 @@ async function renderPortfolio() {
   if (!META || !SETTLE) return;
   if (!PF.init) pfInit();
   const tok = ++pfTok;
-  document.querySelectorAll("[data-prisk]").forEach(b => b.setAttribute("aria-pressed", b.dataset.prisk === S.risk));
   const empty = !PF.assets.length;
   for (const id of ["pf-results"]) $(id).hidden = empty;
   $("pf-empty").hidden = !empty;
@@ -203,9 +201,9 @@ function pfAssetTable(A, nw) {
 
 // ---------- downloads ----------
 function pfTableCsv() { const L = PFLAST; if (!L) return;
-  saveCsv(fileBase("portfolio-options"), ["option", "floating_price", "trace", "contract_mwh", "settlement", "net_revenue", "net_per_mwh", "weekly_sd", "weekly_downside_sd", "mean_week", "p10_week", "cvar10_week", "ear_selected_measure", "risk_measure", "worst_week", "worst_week_start", "diversification", "cap", "floor"],
-    [["merchant", "", "", "", "", L.M, L.M / L.EG, L.mrow.sd, L.mrow.dsd, L.mrow.mean, quant(L.merch.slice().sort((a, b) => a - b), .1), cvar(L.merch.slice().sort((a, b) => a - b)), L.mrow.mean - L.mrow.tail, RISK[S.risk].label, L.mrow.worst, SETTLE.weeks[L.mrow.worstWk], L.mrow.div, PF.cap, PF.floor],
-     ...L.rows.map(r => { const s = r.weekly.slice().sort((a, b) => a - b); return [AP[r.o], FLOATDESC(r.o), TRN[r.t], r.V, r.S, r.net, r.net / L.EG, r.sd, r.dsd, r.mean, r.p10, cvar(s), r.mean - r.tail, RISK[S.risk].label, r.worst, SETTLE.weeks[r.worstWk], r.div, PF.cap, PF.floor]; })]); }
+  saveCsv(fileBase("portfolio-options"), ["option", "floating_price", "trace", "contract_mwh", "settlement", "net_revenue", "net_per_mwh", "weekly_sd", "weekly_downside_sd", "mean_week", "p10_week", "cvar10_week", "ear_cvar10", "worst_week", "worst_week_start", "diversification", "cap", "floor"],
+    [["merchant", "", "", "", "", L.M, L.M / L.EG, L.mrow.sd, L.mrow.dsd, L.mrow.mean, quant(L.merch.slice().sort((a, b) => a - b), .1), cvar(L.merch.slice().sort((a, b) => a - b)), L.mrow.mean - L.mrow.tail, L.mrow.worst, SETTLE.weeks[L.mrow.worstWk], L.mrow.div, PF.cap, PF.floor],
+     ...L.rows.map(r => { const s = r.weekly.slice().sort((a, b) => a - b); return [AP[r.o], FLOATDESC(r.o), TRN[r.t], r.V, r.S, r.net, r.net / L.EG, r.sd, r.dsd, r.mean, r.p10, cvar(s), r.mean - r.tail, r.worst, SETTLE.weeks[r.worstWk], r.div, PF.cap, PF.floor]; })]); }
 function pfAssetsCsv() { const L = PFLAST; if (!L) return;
   saveCsv(fileBase("portfolio-assets"), ["duid", "name", "region", "tech", "capacity_mw", "strike", "volume_mw", "weeks_complete", "output_mwh", "merchant", ...OPTS.flatMap(o => [`${o}_contract_mwh`, `${o}_settlement`, `${o}_net`]), "cap", "floor"],
     L.A.map(x => [x.u.id, x.u.name, x.u.region, x.u.tech, x.u.cap, x.k, x.q, x.weeksOk, x.eg, x.mg, ...OPTS.flatMap(o => [x.vol[o], x.s[o], x.mg + x.s[o]]), PF.cap, PF.floor])); }

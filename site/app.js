@@ -75,7 +75,7 @@ const series = (f, id) => f.header.series.find(s => s.id === id);
 
 // ---------- state ----------
 const S = { tab: "farm", unit: null, y0: 0, y1: 0, units: "cf", showug: false, avg: "m",
-  k: 75, q: 100, cap: 600, floor: 0, risk: "p10",
+  k: 75, q: 100, cap: 600, floor: 0, risk: "cvar",   // earnings-at-risk is CVaR 10% throughout
   ftech: "wind", freg: "", fk: 75, fr: 100, fsort: { k: "net_d", d: -1 } };
 let META, SETTLE, UNIT = new Map();
 const LAST = {};   // latest data behind each chart/table, for downloads
@@ -159,7 +159,6 @@ function wire() {
   });
   const num = (id, key, f) => $(id).oninput = e => { const v = parseFloat(e.target.value); if (isFinite(v)) { S[key] = v; f(); } };
   num("k", "k", () => renderSettle()); num("q", "q", () => renderSettle()); num("cap", "cap", () => renderSettle()); num("floor", "floor", () => renderSettle());
-  document.querySelectorAll("[data-risk]").forEach(b => b.onclick = () => { S.risk = b.dataset.risk; renderSettle(); });
   $("ft-w").onclick = () => { S.ftech = "wind"; setPressed("ft-w", "ft-s", true); renderFleet(); };
   $("ft-s").onclick = () => { S.ftech = "solar"; setPressed("ft-w", "ft-s", false); renderFleet(); };
   $("freg").onchange = e => { S.freg = e.target.value; renderFleet(); };
@@ -515,7 +514,6 @@ async function renderSettle() {
   const stat = arr => { const s = arr.slice().sort((x, y) => x - y), m = mean(s), t = riskTail(s); return { mean: m, p10: t, ear: m - t }; };
   const sweep = OPTS.map(a => { const pm = perMW(a); return { a, tr: OPT[a].tr, pts: PCTS.map(pct => { const q = pct / 100 * u.cap; return { pct, q, ...stat(full.map(w => R.merch[w] + q * pm[w])) }; }), cur: { pct: S.q / u.cap * 100, q: S.q, ...stat(full.map(w => R.merch[w] + S.q * pm[w])) } }; });
   $("st5s").textContent = `Mean weekly net revenue vs earnings-at-risk, $k/week · ${RISK[S.risk].desc} · ${full.length} complete weeks · contract volume 0–200% of ${fmt(u.cap, 0)} MW in 10% steps (0% = merchant) · K ${money(S.k, 2)}/MWh, cap ${money(S.cap, 0)}, floor ${money(S.floor, 0)} · filled marker = current Q`;
-  document.querySelectorAll("[data-risk]").forEach(b => b.setAttribute("aria-pressed", b.dataset.risk === S.risk));
   const W5 = Math.max(320, $("st5").clientWidth || 1200), earCol = Object.fromEntries(OPTS.map(o => [o, css(OPT[o].col)]));
   const drawEar = () => {
     earChart($("st5"), sweep.filter(x => !hidden("st5").has(x.a)), W5);
@@ -725,9 +723,9 @@ function weeklyCsv() {
 }
 function cmpCsv() {
   const L = LAST.settle; if (!L) return; const { rows, M, EG, p } = L;
-  saveCsv(fileBase("option-comparison"), ["option", "floating_price", "trace", "contract_mwh", "settlement", "net_revenue", "net_per_mwh", "vs_merchant_per_mwh", "weekly_sd", "weekly_downside_sd", "mean_week", "p10_week", "cvar10_week", "ear_p10", "ear_cvar10", "ear_parametric", "worst_week", "worst_week_start"],
-    [(() => { const mf = L.full.map(w => L.R.merch[w]).sort((a, b) => a - b), m = mean(mf); return ["merchant", "", "", "", "", M, M / EG, 0, sd(mf), dsd(mf), m, quant(mf, 0.1), cvar(mf), m - quant(mf, 0.1), m - cvar(mf), Z10 * sd(mf), mf[0], ""]; })(),
-     ...rows.map(r => { const nf = L.full.map(w => r.weekly[w]).sort((a, b) => a - b); return [AP[r.o], FLOATDESC(r.o), TRN[r.tr], r.V, r.S, r.net, r.net / EG, (r.net - M) / EG, r.sd, r.dsd, r.mean, r.p10, cvar(nf), r.mean - r.p10, r.mean - cvar(nf), Z10 * r.sd, r.worst, SETTLE.weeks[L.R.w0 + r.worstWk]]; })]);
+  saveCsv(fileBase("option-comparison"), ["option", "floating_price", "trace", "contract_mwh", "settlement", "net_revenue", "net_per_mwh", "vs_merchant_per_mwh", "weekly_sd", "weekly_downside_sd", "mean_week", "p10_week", "cvar10_week", "ear_cvar10", "worst_week", "worst_week_start"],
+    [(() => { const mf = L.full.map(w => L.R.merch[w]).sort((a, b) => a - b), m = mean(mf); return ["merchant", "", "", "", "", M, M / EG, 0, sd(mf), dsd(mf), m, quant(mf, 0.1), cvar(mf), m - cvar(mf), mf[0], ""]; })(),
+     ...rows.map(r => { const nf = L.full.map(w => r.weekly[w]).sort((a, b) => a - b); return [AP[r.o], FLOATDESC(r.o), TRN[r.tr], r.V, r.S, r.net, r.net / EG, (r.net - M) / EG, r.sd, r.dsd, r.mean, r.p10, cvar(nf), r.mean - cvar(nf), r.worst, SETTLE.weeks[L.R.w0 + r.worstWk]]; })]);
 }
 function earCsv() {
   const L = LAST.settle; if (!L) return; const { sweep, p, u } = L;
