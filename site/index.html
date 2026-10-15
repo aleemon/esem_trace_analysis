@@ -594,9 +594,9 @@ td.l{text-align:left;font-family:var(--f-ui)}
      <tbody>
       <tr><td>Weekly SD</td><td>Sample standard deviation of weekly net revenue. Counts upside and downside alike.</td></tr>
       <tr><td>Downside SD</td><td>√ mean(min(x − mean, 0)²): only weeks below the mean contribute, so a few very good weeks don't count as risk.</td></tr>
-      <tr><td>P10</td><td>Used for the box-plot whiskers and shown in the CSV downloads. The 10th-percentile week: 10% of weeks fall below it. With about 50 weeks a year it sits between the 5th and 6th worst week, so it can jump as weeks re-rank.</td></tr>
-      <tr><td>CVaR 10%</td><td>The average of the worst 10% of weeks (fractionally weighted at the boundary). Smoother than P10 and sensitive to how bad the tail is, not just where it starts.</td></tr>
-      <tr><td>Earnings-at-risk (EaR)</td><td>Mean week − CVaR 10%: how far the average of the worst 10% of weeks falls short of a typical week. Every EaR figure and frontier curve on the site uses this measure.</td></tr>
+      <tr><td>P10</td><td>The 10th-percentile week: 10% of weeks fall below it. With about 50 weeks a year it sits between the 5th and 6th worst week, so it can jump as weeks re-rank.</td></tr>
+      <tr><td>CVaR 10%</td><td>Used for the frontier curves. The average of the worst 10% of weeks (fractionally weighted at the boundary). Smoother than P10 and sensitive to how bad the tail is, not just where it starts.</td></tr>
+      <tr><td>Earnings-at-risk (EaR)</td><td>In the tables, mean week − P10 week: how far a bad week falls short of a typical one. The mean vs earnings-at-risk frontier curves use mean week − CVaR 10% instead, which is smoother across contract volumes because it averages the worst weeks rather than reading off one or two of them.</td></tr>
      </tbody>
     </table>
 
