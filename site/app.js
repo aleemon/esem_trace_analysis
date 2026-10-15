@@ -378,7 +378,8 @@ const RISK = {
   p10: { label: "P10", col: "P10 week", tail: s => quant(s, 0.1), desc: "EaR = mean week − P10 week (the week 10% of weeks fall below)" },
   cvar: { label: "CVaR 10%", col: "CVaR 10%", tail: s => cvar(s, 0.1), desc: "EaR = mean week − CVaR 10% (average of the worst 10% of weeks)" },
   param: { label: "Parametric", col: "μ − 1.28σ", tail: s => mean(s) - Z10 * sd(s), desc: "EaR = 1.28 × weekly SD (normal approximation of the 10th percentile)" } };
-const riskTail = s => RISK[S.risk].tail(s);
+const riskTail = s => RISK[S.risk].tail(s);   // frontier curves (CVaR 10%)
+const P10DESC = "EaR = mean week − P10 week (the week 10% of weeks fall below)";
 function lineChart(el, { xs, series, yfmt, w = 600, h = 240, title, xlab, daily = false }) {
   const L = 76, Rr = 136, T = 12, B = 30, ph = h - T - B;
   series.forEach(s => { s.vals = Array.from(s.vals); });
@@ -443,7 +444,7 @@ async function renderSettle() {
     const s = R["s_" + key], net = s.map((v, w) => v + R.merch[w]);
     const nf = full.map(w => net[w]).sort((a, b) => a - b);
     const ww = full.reduce((b, w) => net[w] < net[b] ? w : b, full[0]);
-    return { key, mech: key[0], tr: key.slice(2), S: sum(s), V: sum(R["v_" + key]), net: sum(net), sd: sd(nf), dsd: dsd(nf), p10: quant(nf, 0.1), tail: riskTail(nf), mean: mean(nf), worst: nf[0], worstWk: ww, weekly: net, s };
+    return { key, mech: key[0], tr: key.slice(2), S: sum(s), V: sum(R["v_" + key]), net: sum(net), sd: sd(nf), dsd: dsd(nf), p10: quant(nf, 0.1), tail: quant(nf, 0.1), mean: mean(nf), worst: nf[0], worstWk: ww, weekly: net, s };
   };
   const byKey = Object.fromEntries(KEYS.map(k => [k, row(k)]));
   const rows = OPTS.map(o => ({ ...byKey[OPT[o].key], o }));
@@ -456,11 +457,11 @@ async function renderSettle() {
     ...OPTS.map(a => [AP[a], money(sel[a].net / 1e6, 2) + "M", `${money(sel[a].net / EG, 1)}/MWh · settlement ${money(sel[a].S / 1e6, 2)}M`])
   ].map(([a, v, s]) => `<div class="kpi"><span>${a}</span><b>${v}</b><small>${s}</small></div>`).join("");
   // comparison table
-  $("cmps").textContent = `${u.name}, ${S.y0 === S.y1 ? S.y0 : S.y0 + "–" + S.y1} · K ${money(S.k, 2)}/MWh · Q ${fmt(S.q)} MW · weekly statistics over ${full.length} complete weeks (hover a worst-week value for its date) · ${RISK[S.risk].desc}`;
+  $("cmps").textContent = `${u.name}, ${S.y0 === S.y1 ? S.y0 : S.y0 + "–" + S.y1} · K ${money(S.k, 2)}/MWh · Q ${fmt(S.q)} MW · weekly statistics over ${full.length} complete weeks (hover a worst-week value for its date) · ${P10DESC}`;
   const tr = (cls, cells) => `<tr class="${cls}">${cells.join("")}</tr>`;
   const td = (v, d = 2, isMoney = true) => `<td class="${v < 0 ? "neg" : ""}">${isMoney ? money(v / 1e6, d) : fmt(v, d)}</td>`;
-  let h = `<table><thead><tr><th>Option</th><th>Floating price</th><th>Trace</th><th>Contract GWh</th><th>Settlement $M</th><th>Net revenue $M</th><th>Net $/MWh</th><th>vs merchant $/MWh</th><th>Weekly SD $k</th><th>Downside SD $k</th><th>Mean week $k</th><th>${RISK[S.risk].col} $k</th><th title="${RISK[S.risk].desc}">EaR $k</th><th>Worst week $k</th></tr></thead><tbody>`;
-  h += tr("", [`<td class="l"><span class="tag m">M</span>Merchant only</td>`, `<td class="l">–</td>`, `<td class="l">–</td>`, `<td>–</td>`, `<td>–</td>`, td(M), `<td>${money(M / EG, 1)}</td>`, `<td>–</td>`, `<td>${fmt(msd / 1000, 0)}</td>`, `<td>${fmt(mdsd / 1000, 0)}</td>`, `<td>${money(mean(mf) / 1000, 0)}</td>`, `<td>${money(riskTail(mf) / 1000, 0)}</td>`, `<td>${fmt((mean(mf) - riskTail(mf)) / 1000, 0)}</td>`, `<td title="${wkDate(mww)}">${money(mf[0] / 1000, 0)}</td>`]);
+  let h = `<table><thead><tr><th>Option</th><th>Floating price</th><th>Trace</th><th>Contract GWh</th><th>Settlement $M</th><th>Net revenue $M</th><th>Net $/MWh</th><th>vs merchant $/MWh</th><th>Weekly SD $k</th><th>Downside SD $k</th><th>Mean week $k</th><th>P10 week $k</th><th title="${P10DESC}">EaR $k</th><th>Worst week $k</th></tr></thead><tbody>`;
+  h += tr("", [`<td class="l"><span class="tag m">M</span>Merchant only</td>`, `<td class="l">–</td>`, `<td class="l">–</td>`, `<td>–</td>`, `<td>–</td>`, td(M), `<td>${money(M / EG, 1)}</td>`, `<td>–</td>`, `<td>${fmt(msd / 1000, 0)}</td>`, `<td>${fmt(mdsd / 1000, 0)}</td>`, `<td>${money(mean(mf) / 1000, 0)}</td>`, `<td>${money(quant(mf, 0.1) / 1000, 0)}</td>`, `<td>${fmt((mean(mf) - quant(mf, 0.1)) / 1000, 0)}</td>`, `<td title="${wkDate(mww)}">${money(mf[0] / 1000, 0)}</td>`]);
   for (const r of rows) {
     h += tr("", [`<td class="l"><span class="tag ${r.o}">${r.o.toUpperCase()}</span>${AP[r.o].slice(4)}</td>`, `<td class="l">${FLOATDESC(r.o)}</td>`, `<td class="l">${TRN[r.tr]}</td>`, `<td>${fmt(r.V / 1000, 1)}</td>`, td(r.S), td(r.net),
       `<td>${money(r.net / EG, 1)}</td>`, `<td class="${(r.net - M) < 0 ? "neg" : ""}">${money((r.net - M) / EG, 1)}</td>`, `<td>${fmt(r.sd / 1000, 0)}</td>`, `<td>${fmt(r.dsd / 1000, 0)}</td>`, `<td>${money(r.mean / 1000, 0)}</td>`, `<td>${money(r.tail / 1000, 0)}</td>`, `<td>${fmt((r.mean - r.tail) / 1000, 0)}</td>`, `<td title="${wkDate(r.worstWk)}">${money(r.worst / 1000, 0)}</td>`]);
@@ -513,7 +514,7 @@ async function renderSettle() {
   const PCTS = Array.from({ length: 21 }, (_, i) => i * 10);
   const stat = arr => { const s = arr.slice().sort((x, y) => x - y), m = mean(s), t = riskTail(s); return { mean: m, p10: t, ear: m - t }; };
   const sweep = OPTS.map(a => { const pm = perMW(a); return { a, tr: OPT[a].tr, pts: PCTS.map(pct => { const q = pct / 100 * u.cap; return { pct, q, ...stat(full.map(w => R.merch[w] + q * pm[w])) }; }), cur: { pct: S.q / u.cap * 100, q: S.q, ...stat(full.map(w => R.merch[w] + S.q * pm[w])) } }; });
-  $("st5s").textContent = `Mean weekly net revenue vs earnings-at-risk, $k/week · ${RISK[S.risk].desc} · ${full.length} complete weeks · contract volume 0–200% of ${fmt(u.cap, 0)} MW in 10% steps (0% = merchant) · K ${money(S.k, 2)}/MWh, cap ${money(S.cap, 0)}, floor ${money(S.floor, 0)} · filled marker = current Q`;
+  $("st5s").textContent = `Mean weekly net revenue vs earnings-at-risk, $k/week · ${RISK[S.risk].desc} (the table's EaR uses P10) · ${full.length} complete weeks · contract volume 0–200% of ${fmt(u.cap, 0)} MW in 10% steps (0% = merchant) · K ${money(S.k, 2)}/MWh, cap ${money(S.cap, 0)}, floor ${money(S.floor, 0)} · filled marker = current Q`;
   const W5 = Math.max(320, $("st5").clientWidth || 1200), earCol = Object.fromEntries(OPTS.map(o => [o, css(OPT[o].col)]));
   const drawEar = () => {
     earChart($("st5"), sweep.filter(x => !hidden("st5").has(x.a)), W5);
@@ -723,9 +724,9 @@ function weeklyCsv() {
 }
 function cmpCsv() {
   const L = LAST.settle; if (!L) return; const { rows, M, EG, p } = L;
-  saveCsv(fileBase("option-comparison"), ["option", "floating_price", "trace", "contract_mwh", "settlement", "net_revenue", "net_per_mwh", "vs_merchant_per_mwh", "weekly_sd", "weekly_downside_sd", "mean_week", "p10_week", "cvar10_week", "ear_cvar10", "worst_week", "worst_week_start"],
-    [(() => { const mf = L.full.map(w => L.R.merch[w]).sort((a, b) => a - b), m = mean(mf); return ["merchant", "", "", "", "", M, M / EG, 0, sd(mf), dsd(mf), m, quant(mf, 0.1), cvar(mf), m - cvar(mf), mf[0], ""]; })(),
-     ...rows.map(r => { const nf = L.full.map(w => r.weekly[w]).sort((a, b) => a - b); return [AP[r.o], FLOATDESC(r.o), TRN[r.tr], r.V, r.S, r.net, r.net / EG, (r.net - M) / EG, r.sd, r.dsd, r.mean, r.p10, cvar(nf), r.mean - cvar(nf), r.worst, SETTLE.weeks[L.R.w0 + r.worstWk]]; })]);
+  saveCsv(fileBase("option-comparison"), ["option", "floating_price", "trace", "contract_mwh", "settlement", "net_revenue", "net_per_mwh", "vs_merchant_per_mwh", "weekly_sd", "weekly_downside_sd", "mean_week", "p10_week", "cvar10_week", "ear_p10", "ear_cvar10", "worst_week", "worst_week_start"],
+    [(() => { const mf = L.full.map(w => L.R.merch[w]).sort((a, b) => a - b), m = mean(mf); return ["merchant", "", "", "", "", M, M / EG, 0, sd(mf), dsd(mf), m, quant(mf, 0.1), cvar(mf), m - quant(mf, 0.1), m - cvar(mf), mf[0], ""]; })(),
+     ...rows.map(r => { const nf = L.full.map(w => r.weekly[w]).sort((a, b) => a - b); return [AP[r.o], FLOATDESC(r.o), TRN[r.tr], r.V, r.S, r.net, r.net / EG, (r.net - M) / EG, r.sd, r.dsd, r.mean, r.p10, cvar(nf), r.mean - r.p10, r.mean - cvar(nf), r.worst, SETTLE.weeks[L.R.w0 + r.worstWk]]; })]);
 }
 function earCsv() {
   const L = LAST.settle; if (!L) return; const { sweep, p, u } = L;
