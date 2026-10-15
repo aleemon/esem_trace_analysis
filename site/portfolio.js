@@ -122,10 +122,10 @@ async function renderPortfolio() {
     const s = pw.map(w => sum(A.map(x => x.st(w, o)))), net = s.map((v, i) => v + merch[i]), nf = net.slice().sort((a, b) => a - b);
     const sds = A.map(x => sd(pw.map(w => x.MG(w) + x.st(w, o))));
     const wi = net.indexOf(nf[0]);
-    rows.push({ o, t: OPT[o].tr, S: sum(s), V: sum(A.map(x => x.vol[o])), net: sum(net), weekly: net, sd: sd(nf), dsd: dsd(nf), mean: mean(nf), tail: riskTail(nf), p10: quant(nf, 0.1), worst: nf[0], worstWk: pw[wi], div: 1 - sd(nf) / sum(sds) });
+    rows.push({ o, t: OPT[o].tr, S: sum(s), V: sum(A.map(x => x.vol[o])), net: sum(net), weekly: net, sd: sd(nf), dsd: dsd(nf), mean: mean(nf), tail: quant(nf, 0.1), p10: quant(nf, 0.1), worst: nf[0], worstWk: pw[wi], div: 1 - sd(nf) / sum(sds) });
   }
   const mf = merch.slice().sort((a, b) => a - b), msds = A.map(x => sd(x.mw));
-  const mrow = { sd: sd(mf), dsd: dsd(mf), mean: mean(mf), tail: riskTail(mf), worst: mf[0], worstWk: pw[merch.indexOf(mf[0])], div: 1 - sd(mf) / sum(msds) };
+  const mrow = { sd: sd(mf), dsd: dsd(mf), mean: mean(mf), tail: quant(mf, 0.1), worst: mf[0], worstWk: pw[merch.indexOf(mf[0])], div: 1 - sd(mf) / sum(msds) };
   const sel = Object.fromEntries(rows.map(r => [r.o, r]));
   const per = S.y0 === S.y1 ? `${S.y0}` : `${S.y0}–${S.y1}`;
 
@@ -138,9 +138,9 @@ async function renderPortfolio() {
 
   // approaches table
   const wkDate = w => w == null ? "" : `week from ${weeks[w]}`;
-  $("pf-tbls").textContent = `${A.length} assets, ${per} · cap ${money(PF.cap, 0)}, floor ${money(PF.floor, 0)} for every contract · weekly statistics over the ${fmt(pw.length)} weeks where every asset has complete data · ${RISK[S.risk].desc} · diversification = 1 − SD(portfolio weekly net) ÷ Σ SD(each asset's weekly net)`;
+  $("pf-tbls").textContent = `${A.length} assets, ${per} · cap ${money(PF.cap, 0)}, floor ${money(PF.floor, 0)} for every contract · weekly statistics over the ${fmt(pw.length)} weeks where every asset has complete data · ${P10DESC} · diversification = 1 − SD(portfolio weekly net) ÷ Σ SD(each asset's weekly net)`;
   const td = (v, d = 2) => `<td class="${v < 0 ? "neg" : ""}">${money(v / 1e6, d)}</td>`, pc = v => `<td>${isFinite(v) ? fmt(v * 100, 0) + "%" : "–"}</td>`;
-  let h = `<table><thead><tr><th>Option</th><th>Floating price</th><th>Trace</th><th>Contract GWh</th><th>Settlement $M</th><th>Net revenue $M</th><th>Net $/MWh</th><th>vs merchant $/MWh</th><th>Weekly SD $k</th><th>Downside SD $k</th><th>Mean week $k</th><th>${RISK[S.risk].col} $k</th><th title="${RISK[S.risk].desc}">EaR $k</th><th>Worst week $k</th><th>Diversification</th></tr></thead><tbody>`;
+  let h = `<table><thead><tr><th>Option</th><th>Floating price</th><th>Trace</th><th>Contract GWh</th><th>Settlement $M</th><th>Net revenue $M</th><th>Net $/MWh</th><th>vs merchant $/MWh</th><th>Weekly SD $k</th><th>Downside SD $k</th><th>Mean week $k</th><th>P10 week $k</th><th title="${P10DESC}">EaR $k</th><th>Worst week $k</th><th>Diversification</th></tr></thead><tbody>`;
   h += `<tr><td class="l"><span class="tag m">M</span>Merchant only</td><td class="l">–</td><td class="l">–</td><td>–</td><td>–</td>${td(M)}<td>${money(M / EG, 1)}</td><td>–</td><td>${fmt(mrow.sd / 1000, 0)}</td><td>${fmt(mrow.dsd / 1000, 0)}</td><td>${money(mrow.mean / 1000, 0)}</td><td>${money(mrow.tail / 1000, 0)}</td><td>${fmt((mrow.mean - mrow.tail) / 1000, 0)}</td><td title="${wkDate(mrow.worstWk)}">${money(mrow.worst / 1000, 0)}</td>${pc(mrow.div)}</tr>`;
   for (const r of rows) h += `<tr><td class="l"><span class="tag ${r.o}">${r.o.toUpperCase()}</span>${AP[r.o].slice(4)}</td><td class="l">${FLOATDESC(r.o)}</td><td class="l">${TRN[r.t]}</td><td>${fmt(r.V / 1000, 1)}</td>${td(r.S)}${td(r.net)}<td>${money(r.net / EG, 1)}</td><td class="${r.net < M ? "neg" : ""}">${money((r.net - M) / EG, 1)}</td><td>${fmt(r.sd / 1000, 0)}</td><td>${fmt(r.dsd / 1000, 0)}</td><td>${money(r.mean / 1000, 0)}</td><td>${money(r.tail / 1000, 0)}</td><td>${fmt((r.mean - r.tail) / 1000, 0)}</td><td title="${wkDate(r.worstWk)}">${money(r.worst / 1000, 0)}</td>${pc(r.div)}</tr>`;
   $("pf-tbl").innerHTML = h + `</tbody></table>`;
@@ -169,7 +169,7 @@ async function renderPortfolio() {
   const sweep = OPTS.map(ap => { const st = sel[ap].weekly.map((v, i) => v - merch[i]);
     const pt = pct => ({ pct, q: qT * pct / 100, ...stat(merch.map((m, i) => m + pct / 100 * st[i])) });
     return { a: ap, tr: OPT[ap].tr, pts: Array.from({ length: 21 }, (_, i) => pt(i * 10)), cur: pt(100) }; });
-  $("pf4s").textContent = `Portfolio mean weekly net revenue vs earnings-at-risk, $k/week · ${RISK[S.risk].desc} · every contract scaled together from 0% to 200% of its specified volume in 10% steps (0% = merchant only, filled marker = the volumes as specified, ${fmt(qT, 0)} MW in total) · each contract keeps its own strike · ${fmt(pw.length)} common complete weeks`;
+  $("pf4s").textContent = `Portfolio mean weekly net revenue vs earnings-at-risk, $k/week · ${RISK[S.risk].desc} (the table's EaR uses P10) · every contract scaled together from 0% to 200% of its specified volume in 10% steps (0% = merchant only, filled marker = the volumes as specified, ${fmt(qT, 0)} MW in total) · each contract keeps its own strike · ${fmt(pw.length)} common complete weeks`;
   const W4 = Math.max(320, $("pf4").clientWidth || 1200), ecol = Object.fromEntries(OPTS.map(o => [o, css(OPT[o].col)]));
   const d4 = () => { earChart($("pf4"), sweep.filter(x => !hidden("pf4").has(x.a)), W4); legend($("pf4"), "pf4", sweep.map(x => ({ key: x.a, name: AP[x.a], color: ecol[x.a], dash: !!OPT[x.a].dash })), d4); };
   d4();
@@ -201,9 +201,9 @@ function pfAssetTable(A, nw) {
 
 // ---------- downloads ----------
 function pfTableCsv() { const L = PFLAST; if (!L) return;
-  saveCsv(fileBase("portfolio-options"), ["option", "floating_price", "trace", "contract_mwh", "settlement", "net_revenue", "net_per_mwh", "weekly_sd", "weekly_downside_sd", "mean_week", "p10_week", "cvar10_week", "ear_cvar10", "worst_week", "worst_week_start", "diversification", "cap", "floor"],
-    [["merchant", "", "", "", "", L.M, L.M / L.EG, L.mrow.sd, L.mrow.dsd, L.mrow.mean, quant(L.merch.slice().sort((a, b) => a - b), .1), cvar(L.merch.slice().sort((a, b) => a - b)), L.mrow.mean - L.mrow.tail, L.mrow.worst, SETTLE.weeks[L.mrow.worstWk], L.mrow.div, PF.cap, PF.floor],
-     ...L.rows.map(r => { const s = r.weekly.slice().sort((a, b) => a - b); return [AP[r.o], FLOATDESC(r.o), TRN[r.t], r.V, r.S, r.net, r.net / L.EG, r.sd, r.dsd, r.mean, r.p10, cvar(s), r.mean - r.tail, r.worst, SETTLE.weeks[r.worstWk], r.div, PF.cap, PF.floor]; })]); }
+  saveCsv(fileBase("portfolio-options"), ["option", "floating_price", "trace", "contract_mwh", "settlement", "net_revenue", "net_per_mwh", "weekly_sd", "weekly_downside_sd", "mean_week", "p10_week", "cvar10_week", "ear_p10", "ear_cvar10", "worst_week", "worst_week_start", "diversification", "cap", "floor"],
+    [["merchant", "", "", "", "", L.M, L.M / L.EG, L.mrow.sd, L.mrow.dsd, L.mrow.mean, quant(L.merch.slice().sort((a, b) => a - b), .1), cvar(L.merch.slice().sort((a, b) => a - b)), L.mrow.mean - L.mrow.tail, L.mrow.mean - cvar(L.merch.slice().sort((a, b) => a - b)), L.mrow.worst, SETTLE.weeks[L.mrow.worstWk], L.mrow.div, PF.cap, PF.floor],
+     ...L.rows.map(r => { const s = r.weekly.slice().sort((a, b) => a - b); return [AP[r.o], FLOATDESC(r.o), TRN[r.t], r.V, r.S, r.net, r.net / L.EG, r.sd, r.dsd, r.mean, r.p10, cvar(s), r.mean - r.p10, r.mean - cvar(s), r.worst, SETTLE.weeks[r.worstWk], r.div, PF.cap, PF.floor]; })]); }
 function pfAssetsCsv() { const L = PFLAST; if (!L) return;
   saveCsv(fileBase("portfolio-assets"), ["duid", "name", "region", "tech", "capacity_mw", "strike", "volume_mw", "weeks_complete", "output_mwh", "merchant", ...OPTS.flatMap(o => [`${o}_contract_mwh`, `${o}_settlement`, `${o}_net`]), "cap", "floor"],
     L.A.map(x => [x.u.id, x.u.name, x.u.region, x.u.tech, x.u.cap, x.k, x.q, x.weeksOk, x.eg, x.mg, ...OPTS.flatMap(o => [x.vol[o], x.s[o], x.mg + x.s[o]]), PF.cap, PF.floor])); }
