@@ -1,0 +1,144 @@
+# Azure DevOps build and deploy for the ESEM Contract Design Analysis dashboard.
+# Same job as .github/workflows/pages.yml: fetch AEMO data with R, build site/data, publish site/ to Azure Static Web Apps.
+#   Data persistence : pipeline cache (fast, evictable) + Blob Storage container (permanent)  -> scripts/blob_sync.sh
+#   Hosting          : Azure Static Web Apps (deployment token in the variable group)
+# Setup steps: docs/AZURE_SETUP.md
+
+trigger:
+  branches:
+    include: [main]
+  paths:
+    include: [site, R, run.R, config, scripts, azure-pipelines.yml]
+
+pr: none
+
+schedules:
+  - cron: "15 20 * * *"            # 06:15 AEST: after the previous market day's prices and dispatch files land
+    displayName: Nightly build
+    branches:
+      include: [main]
+    always: true                   # run even when the code has not changed (the data has)
+
+parameters:
+  - name: force
+    displayName: Rebuild every region-year (otherwise only changed ones)
+    type: boolean
+    default: false
+  - name: seedFromGitHub
+    displayName: One-off - copy the GitHub data-aemo release into Blob Storage before building
+    type: boolean
+    default: false
+  - name: selfHostedPool
+    displayName: Self-hosted agent pool name (blank = Microsoft-hosted ubuntu-latest)
+    type: string
+    default: " "
+
+variables:
+  # Defaults; anything set in the variable group below overrides these.
+  - name: serviceConnection        # Azure Resource Manager service connection name (Project settings > Service connections)
+    value: esem-azure
+  - name: DATA_SOURCE
+    value: synthetic
+  - name: YEARS_BACK
+    value: "5"
+  - name: FETCH_MINUTES            # run.R stops fetching after this and builds with what it has; the next night resumes.
+    value: "35"                    # 35 fits the 60-minute free tier; raise to ~240 with a paid parallel job
+  - name: SWA_MAX_MB               # Static Web Apps size per environment: 250 MB Free, 500 MB Standard
+    value: "250"
+  - name: SWA_AUTH                 # "none" = anyone with the link; "entra" = Atmos Entra ID sign-in (Standard plan)
+    value: none
+  - group: esem-dashboard          # DATA_SOURCE, STORAGE_ACCOUNT, STORAGE_CONTAINER, SWA_DEPLOYMENT_TOKEN (secret), ...
+                                   # non-secret variables reach the scripts as environment variables automatically
+
+pool:
+  ${{ if eq(trim(parameters.selfHostedPool), '') }}:
+    vmImage: ubuntu-latest
+  ${{ else }}:
+    name: ${{ parameters.selfHostedPool }}
+
+jobs:
+  - job: build_deploy
+    displayName: Fetch, build and deploy
+    timeoutInMinutes: 355          # capped at 60 on the free tier regardless
+    steps:
+      - checkout: self
+        fetchDepth: 1
+
+      - bash: |
+          set -e
+          if command -v Rscript >/dev/null && Rscript -e 'library(data.table); library(jsonlite)' >/dev/null 2>&1; then
+            echo "R and packages already present"; Rscript --version; exit 0
+          fi
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends r-base-core r-cran-data.table r-cran-jsonlite unzip jq
+          Rscript --version
+        displayName: Install R
+
+      - task: Cache@2
+        displayName: Restore data cache
+        inputs:
+          key: 'wid | "$(DATA_SOURCE)" | "$(Build.BuildId)"'
+          restoreKeys: |
+            wid | "$(DATA_SOURCE)"
+          path: $(System.DefaultWorkingDirectory)/cache
+
+      - ${{ if parameters.seedFromGitHub }}:
+          - task: AzureCLI@2
+            displayName: Seed Blob Storage from the GitHub data release
+            inputs:
+              azureSubscription: ${{ variables.serviceConnection }}
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: bash scripts/blob_sync.sh seed
+
+      - task: AzureCLI@2
+        displayName: Restore missing extracts from Blob Storage
+        condition: and(succeeded(), eq(variables['DATA_SOURCE'], 'aemo'))
+        inputs:
+          azureSubscription: ${{ variables.serviceConnection }}
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: bash scripts/blob_sync.sh restore
+
+      - bash: Rscript run.R
+        displayName: Fetch and build
+        env:
+          FORCE: ${{ lower(parameters.force) }}
+
+      - task: AzureCLI@2
+        displayName: Back up extracts to Blob Storage
+        condition: and(always(), eq(variables['DATA_SOURCE'], 'aemo'))
+        inputs:
+          azureSubscription: ${{ variables.serviceConnection }}
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: bash scripts/blob_sync.sh publish
+
+      - bash: |
+          set -e
+          V="$(echo "$BUILD_SOURCEVERSION" | cut -c1-8)"
+          # browsers otherwise keep an old app.js / shaping.js / portfolio.js against a new index.html for a while
+          sed -i -E "s#src=\"(app|shaping|portfolio)\.js\"#src=\"\1.js?v=${V}\"#g" site/index.html
+          case "$(echo "$SWA_AUTH" | tr A-Z a-z)" in
+            entra)
+              [ -n "${ENTRA_TENANT_ID:-}" ] || { echo "##vso[task.logissue type=error]SWA_AUTH=entra needs ENTRA_TENANT_ID"; exit 1; }
+              sed "s#__TENANT_ID__#${ENTRA_TENANT_ID}#" config/staticwebapp.entra.json > site/staticwebapp.config.json
+              echo "access: Entra ID sign-in, tenant ${ENTRA_TENANT_ID}" ;;
+            *) echo "access: open (anyone with the link)" ;;
+          esac
+          rm -f site/.nojekyll
+          mb=$(du -sm site | cut -f1); echo "site/ is ${mb} MB (limit ${SWA_MAX_MB} MB)"
+          if [ "$mb" -gt "$SWA_MAX_MB" ]; then
+            echo "##vso[task.logissue type=error]site/ is ${mb} MB, over the Static Web Apps limit of ${SWA_MAX_MB} MB. Move to the Standard plan (SWA_MAX_MB=500) or lower YEARS_BACK / START_YEAR."
+            exit 1
+          fi
+        displayName: Prepare site
+
+      - task: AzureStaticWebApp@0
+        displayName: Deploy to Azure Static Web Apps
+        inputs:
+          app_location: site
+          output_location: ""
+          skip_app_build: true
+          skip_api_build: true
+          azure_static_web_apps_api_token: $(SWA_DEPLOYMENT_TOKEN)
