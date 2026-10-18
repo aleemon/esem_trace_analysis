@@ -1,0 +1,13 @@
+{
+  "mimeTypes": {
+    ".bin": "application/octet-stream",
+    ".csv": "text/csv",
+    ".json": "application/json",
+    ".md": "text/markdown"
+  },
+  "routes": [
+    { "route": "/index.html", "headers": { "Cache-Control": "no-cache" } },
+    { "route": "/data/*", "headers": { "Cache-Control": "no-cache" } }
+  ],
+  "globalHeaders": { "X-Content-Type-Options": "nosniff" }
+}

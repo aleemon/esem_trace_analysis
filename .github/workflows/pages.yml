@@ -1,4 +1,6 @@
 name: Build and deploy dashboard
+# GitHub Pages build. The Azure build (azure-pipelines.yml) runs from the same branch; site/staticwebapp.config.json
+# and the Azure files are ignored here.
 
 on:
   schedule:
