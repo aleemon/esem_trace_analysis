@@ -66,6 +66,11 @@ if [[ "$MODE" == "seed" ]]; then
   az storage blob upload-batch --account-name "$STORAGE_ACCOUNT" --destination "$STORAGE_CONTAINER" --auth-mode login --only-show-errors \
     --destination-path "${SRC}" --source "$tmp/up" --overwrite true --max-connections 8 > /dev/null
   echo "seeded $(ls "$tmp/up" | wc -l) file(s) into $STORAGE_ACCOUNT/$STORAGE_CONTAINER/$PREFIX"
+  # also drop them into the local cache, so the restore step that follows has nothing to download again
+  for f in "$tmp/up"/*; do
+    dest="$(asset_to_path "$(basename "$f")")"; [[ -z "$dest" || -f "$dest" ]] && continue
+    mkdir -p "$(dirname "$dest")"; mv "$f" "$dest"
+  done
   exit 0
 fi
 
