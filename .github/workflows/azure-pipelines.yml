@@ -4,6 +4,8 @@
 #   Hosting          : Azure Static Web Apps (deployment token in the variable group)
 # Setup steps: docs/AZURE_SETUP.md
 
+# Runs from main alongside .github/workflows/pages.yml: one branch, two hosts. Each build ignores the other's files
+# (neither path list includes the other's pipeline file), so a change to one pipeline does not rebuild the other site.
 trigger:
   branches:
     include: [main]
@@ -13,7 +15,7 @@ trigger:
 pr: none
 
 schedules:
-  - cron: "15 20 * * *"            # 06:15 AEST: after the previous market day's prices and dispatch files land
+  - cron: "45 20 * * *"            # 06:45 AEST: 30 min after the GitHub build, so the two don't hit NEMWeb together
     displayName: Nightly build
     branches:
       include: [main]
