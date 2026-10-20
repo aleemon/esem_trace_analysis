@@ -10,14 +10,24 @@ The Azure build does the same job as the GitHub one. It runs a nightly R build f
 
 The R code and the front end are unchanged. The data is still served from `data/` on the same site, so `app.js` needs no edits.
 
-## 1. Bring the code into Azure Repos
+## 1. One branch, two hosts
 
-1. In Azure DevOps, go to **Repos > Import repository**.
-2. Paste the GitHub repo URL. A public repo needs no credentials.
+`main` is built twice, by two independent builds that share the same R code and front end:
 
-You can keep committing through the web UI, either by editing files or with **Upload file(s)**.
+| Build | File | Data backup | Host | Nightly |
+|---|---|---|---|---|
+| GitHub Actions | `.github/workflows/pages.yml` | GitHub release `data-aemo` | GitHub Pages | 06:15 AEST |
+| Azure Pipelines | `azure-pipelines.yml` | Blob container `esem-data` | Azure Static Web Apps | 06:45 AEST |
 
-Alternatively, you can leave the code on GitHub and point the pipeline at it (**New pipeline > GitHub**). This needs the Azure Pipelines GitHub app.
+- A push to `main` that touches `site/`, `R/`, `run.R`, `config/` or `scripts/` rebuilds both sites.
+- A change to one pipeline file only rebuilds its own site.
+- The Azure-only files are harmless on GitHub Pages:
+  - `site/staticwebapp.config.json` is served there as a plain file.
+  - The tenant ID is only injected at Azure build time, never committed.
+- `site/.nojekyll` is needed by Pages and is removed by the Azure build.
+- Each build fetches NEMWeb data and keeps its own backup, so the two sites can differ by a day around the nightly runs. Code is always identical.
+
+When creating the pipeline (step 5), choose **GitHub (YAML)**, pick this repo and point it at `/azure-pipelines.yml` on `main`.
 
 ## 2. Create the Azure resources
 
@@ -63,16 +73,16 @@ Go to **Pipelines > Library > + Variable group** and name the group **`esem-dash
 
 ## 5. Create and run the pipeline
 
-1. Go to **Pipelines > New pipeline > Azure Repos Git**.
-2. Pick the repo, then **Existing Azure Pipelines YAML file** > `/azure-pipelines.yml`.
+1. Go to **Pipelines > New pipeline > GitHub (YAML)**. Install the Azure Pipelines GitHub app on this repo only.
+2. Pick the repo, then **Existing Azure Pipelines YAML file**, branch `main`, path `/azure-pipelines.yml`.
 3. Click **Run**. For the first run, open **Run pipeline**, tick **One-off – copy the GitHub data-aemo release into Blob Storage**, and run it.
    - This copies the existing extracts across, so the first build doesn't refetch years of NEMWeb data.
    - Approve the permission prompts for the variable group and service connection.
 4. Find the site URL on **Static Web App > Overview**, for example `https://<name>.azurestaticapps.net`.
 
-The pipeline then runs nightly at 06:15 AEST and on every push to `main` that touches the app.
+The pipeline then runs nightly at 06:45 AEST and on every push to `main` that touches the app.
 
-Once the Azure build is working, stop the GitHub schedule in GitHub: **Actions > Build and deploy dashboard > ··· > Disable workflow**.
+Both builds fetch from NEMWeb each night, independently. Set `GITHUB_REPO` to this repo for the one-off seed.
 
 ### Agent minutes
 
@@ -88,7 +98,7 @@ Check **Organization settings > Parallel jobs**.
 The fetch report (`aemo/fetch_report.md` in the container) will show the failures. If that happens:
 
 1. Register a self-hosted agent on an Atmos VM with Ubuntu, R, `r-cran-data.table`, `r-cran-jsonlite`, `unzip`, `jq` and the Azure CLI.
-2. Enter its pool name in the **Self-hosted agent pool** run parameter.
+2. In `azure-pipelines.yml`, replace `vmImage: ubuntu-latest` under the job's `pool:` with `name: <agent pool name>`.
 
 ## 6. Optional: Atmos-only sign-in (Entra ID)
 
