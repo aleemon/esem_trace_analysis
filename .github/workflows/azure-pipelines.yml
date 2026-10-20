@@ -30,10 +30,6 @@ parameters:
     displayName: One-off - copy the GitHub data-aemo release into Blob Storage before building
     type: boolean
     default: false
-  - name: selfHostedPool
-    displayName: Self-hosted agent pool name (blank = Microsoft-hosted ubuntu-latest)
-    type: string
-    default: " "
 
 variables:
   # Defaults; anything set in the variable group below overrides these.
@@ -52,16 +48,12 @@ variables:
   - group: esem-dashboard          # DATA_SOURCE, STORAGE_ACCOUNT, STORAGE_CONTAINER, SWA_DEPLOYMENT_TOKEN (secret), ...
                                    # non-secret variables reach the scripts as environment variables automatically
 
-pool:
-  ${{ if eq(trim(parameters.selfHostedPool), '') }}:
-    vmImage: ubuntu-latest
-  ${{ else }}:
-    name: ${{ parameters.selfHostedPool }}
-
 jobs:
   - job: build_deploy
     displayName: Fetch, build and deploy
     timeoutInMinutes: 355          # capped at 60 on the free tier regardless
+    pool:
+      vmImage: ubuntu-latest       # self-hosted agent instead: replace this line with   name: <agent pool name>
     steps:
       - checkout: self
         fetchDepth: 1
@@ -105,7 +97,7 @@ jobs:
       - bash: Rscript run.R
         displayName: Fetch and build
         env:
-          FORCE: ${{ lower(parameters.force) }}
+          FORCE: ${{ parameters.force }}   # True/False; run.R lower-cases it
 
       - task: AzureCLI@2
         displayName: Back up extracts to Blob Storage
